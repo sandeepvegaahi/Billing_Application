@@ -1,11 +1,11 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 
-const Navbar = () => {
+const TopNavbar = () => {
   const navigate = useNavigate();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  // Check login status
+  
   useEffect(() => {
     const token = localStorage.getItem("adminToken");
     setIsLoggedIn(!!token);
@@ -14,7 +14,6 @@ const Navbar = () => {
   const handleLogout = () => {
     localStorage.removeItem("adminToken");
     localStorage.removeItem("adminInfo");
-
     setIsLoggedIn(false);
     navigate("/login");
   };
@@ -55,4 +54,4 @@ const Navbar = () => {
   );
 };
 
-export default Navbar;
+export default TopNavbar;
