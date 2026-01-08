@@ -1,6 +1,6 @@
 import { Card, Form, Button } from "react-bootstrap";
 import { useState } from "react";
-import api from "../../api/api";
+import api from "../../../api/api";
 import Swal from "sweetalert2";
 
 const DeletePage = () => {
@@ -35,7 +35,10 @@ const DeletePage = () => {
   };
 
   return (
-    <Card className="p-4 shadow-sm rounded-4 mx-auto" style={{ maxWidth: "500px" }}>
+    <Card
+      className="p-4 shadow-sm rounded-4 mx-auto"
+      style={{ maxWidth: "500px" }}
+    >
       {/* Header */}
       <h5 className="mb-4 text-center fw-bold text-danger">Delete Student</h5>
 

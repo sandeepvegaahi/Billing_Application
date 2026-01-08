@@ -1,79 +1,64 @@
-import { Card, Form, Button, Row, Col } from "react-bootstrap";
-import { useState } from "react";
+import { useState, useRef } from "react";
+import { Button, Form, Card, ProgressBar } from "react-bootstrap";
 import api from "../../api/api";
 import Swal from "sweetalert2";
+import { notifyDashboardUpdate } from "../../utils/dashboardEvents";
 
 const DashboardUpload = () => {
-  const token = localStorage.getItem("adminToken");
-  const [type, setType] = useState("students");
   const [file, setFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const token = localStorage.getItem("adminToken");
+
+  const fileInputRef = useRef(null); // ✅ ADDED
+
+  const handleFileChange = (e) => setFile(e.target.files[0]);
 
   const handleUpload = async () => {
-    if (!file) {
-      Swal.fire("Error", "Select Excel file", "error");
-      return;
-    }
+    if (!file) return Swal.fire("Error", "Please select a file", "error");
 
     const formData = new FormData();
     formData.append("file", file);
 
-    let url = "";
-    if (type === "students") url = "/students/bulk-upload/students";
-    if (type === "tuition") url = "/students/bulk-upload/tuition";
-    if (type === "bus") url = "/students/bulk-upload/bus";
-
+    setUploading(true);
     try {
-      await api.post(url, formData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "multipart/form-data",
-        },
+      const res = await api.post("/students/bulk-upload/students", formData, {
+        headers: { Authorization: `Bearer ${token}` },
       });
 
-      Swal.fire("Success", "File uploaded successfully", "success");
-      setFile(null);
-    } catch {
-      Swal.fire("Error", "Upload failed", "error");
+      if (res.data?.success) {
+        Swal.fire("Success", "Students uploaded successfully!", "success");
+        setFile(null);
+        if (fileInputRef.current) fileInputRef.current.value = ""; // ✅ RESET INPUT
+        notifyDashboardUpdate(); // ✅ UPDATE DASHBOARD COUNT
+      }
+    } catch (err) {
+      console.error(err);
+      Swal.fire(
+        "Upload Failed",
+        err.response?.data?.message || "Something went wrong",
+        "error"
+      );
+    } finally {
+      setUploading(false);
     }
   };
 
   return (
-    <Card className="p-4 shadow-sm rounded-4 mx-auto" style={{ maxWidth: "900px" }}>
-      {/* Header */}
-      <h5 className="mb-4 fw-bold text-primary text-center">Upload Excel File</h5>
-
-      <Row className="align-items-center g-3">
-        <Col md={4}>
-          <Form.Select
-            value={type}
-            onChange={(e) => setType(e.target.value)}
-            className="shadow-sm"
-          >
-            <option value="students">Students</option>
-            <option value="tuition">Tuition Fee</option>
-            <option value="bus">Bus Fee</option>
-          </Form.Select>
-        </Col>
-
-        <Col md={5}>
-          <Form.Control
-            type="file"
-            accept=".xls,.xlsx"
-            onChange={(e) => setFile(e.target.files[0])}
-            className="shadow-sm"
-          />
-        </Col>
-
-        <Col md={3}>
-          <Button
-            className="w-100 fw-semibold py-2"
-            variant="primary"
-            onClick={handleUpload}
-          >
-            Upload
-          </Button>
-        </Col>
-      </Row>
+    <Card className="p-4 w-50 mx-auto shadow-sm rounded-4 mt-4">
+      <h5 className="mb-3">Bulk Upload Students</h5>
+      <Form.Group controlId="fileUpload" className="mb-3">
+        <Form.Label>Select Excel File</Form.Label>
+        <Form.Control
+          type="file"
+          accept=".xlsx, .xls"
+          onChange={handleFileChange}
+          ref={fileInputRef} // ✅ ADDED
+        />
+      </Form.Group>
+      <Button variant="primary" onClick={handleUpload} disabled={uploading}>
+        {uploading ? "Uploading..." : "Upload"}
+      </Button>
+      {uploading && <ProgressBar animated now={100} className="mt-3" />}
     </Card>
   );
 };

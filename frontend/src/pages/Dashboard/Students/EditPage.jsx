@@ -1,6 +1,6 @@
 import { Card, Form, Button } from "react-bootstrap";
 import { useState } from "react";
-import api from "../../api/api";
+import api from "../../../api/api";
 import Swal from "sweetalert2";
 
 const EditPage = () => {
@@ -36,7 +36,10 @@ const EditPage = () => {
   };
 
   return (
-    <Card className="p-4 shadow-sm rounded-4 mx-auto" style={{ maxWidth: "600px" }}>
+    <Card
+      className="p-4 shadow-sm rounded-4 mx-auto"
+      style={{ maxWidth: "600px" }}
+    >
       <h5 className="mb-4 fw-bold text-center text-warning">Edit Student</h5>
 
       <Form.Control
@@ -67,9 +70,7 @@ const EditPage = () => {
 
           <Form.Control
             value={student.branch}
-            onChange={(e) =>
-              setStudent({ ...student, branch: e.target.value })
-            }
+            onChange={(e) => setStudent({ ...student, branch: e.target.value })}
             className="shadow-sm"
             placeholder="Branch"
           />

@@ -1,61 +1,27 @@
-// src/components/DashboardNavbar.jsx
-import { NavLink, useLocation } from "react-router-dom";
 import { Nav } from "react-bootstrap";
+import { NavLink } from "react-router-dom";
 
 const DashboardNavbar = () => {
-  const location = useLocation(); 
-
   return (
-    <Nav variant="tabs" className="mb-4">
-      <Nav.Item>
-        <Nav.Link
-          as={NavLink}
-          to="/dashboard"
-          className={location.pathname === "/dashboard" ? "active" : ""}
-        >
-          Upload
-        </Nav.Link>
-      </Nav.Item>
-
-      <Nav.Item>
-        <Nav.Link
-          as={NavLink}
-          to="/dashboard/view"
-          className={location.pathname === "/dashboard/view" ? "active" : ""}
-        >
-          View
-        </Nav.Link>
-      </Nav.Item>
-
-      <Nav.Item>
-        <Nav.Link
-          as={NavLink}
-          to="/dashboard/add"
-          className={location.pathname === "/dashboard/add" ? "active" : ""}
-        >
-          Add
-        </Nav.Link>
-      </Nav.Item>
-
-      <Nav.Item>
-        <Nav.Link
-          as={NavLink}
-          to="/dashboard/edit"
-          className={location.pathname === "/dashboard/edit" ? "active" : ""}
-        >
-          Edit
-        </Nav.Link>
-      </Nav.Item>
-
-      <Nav.Item>
-        <Nav.Link
-          as={NavLink}
-          to="/dashboard/delete"
-          className={location.pathname === "/dashboard/delete" ? "active" : ""}
-        >
-          Delete
-        </Nav.Link>
-      </Nav.Item>
+    <Nav className="flex-column bg-light p-3 shadow-sm" style={{ minWidth: "200px" }}>
+      <Nav.Link as={NavLink} to="/dashboard" end>
+        Dashboard
+      </Nav.Link>
+      <Nav.Link as={NavLink} to="/dashboard/students/view">
+        Students
+      </Nav.Link>
+      <Nav.Link as={NavLink} to="/dashboard/bulk-upload">
+        Bulk Upload
+      </Nav.Link>
+      <Nav.Link as={NavLink} to="/dashboard/fee-payment">
+        Fee Payment
+      </Nav.Link>
+      <Nav.Link as={NavLink} to="/dashboard/fee-structure">
+        Fee Structure
+      </Nav.Link>
+      <Nav.Link as={NavLink} to="/dashboard/fee-reports">
+        Fee Reports
+      </Nav.Link>
     </Nav>
   );
 };

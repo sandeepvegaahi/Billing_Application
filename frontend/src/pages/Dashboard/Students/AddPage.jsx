@@ -1,6 +1,6 @@
 import { Card, Form, Button, Row, Col } from "react-bootstrap";
 import { useState } from "react";
-import api from "../../api/api";
+import api from "../../../api/api";
 import Swal from "sweetalert2";
 
 const AddPage = () => {

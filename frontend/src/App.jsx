@@ -4,32 +4,30 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 
-
+import DashboardLayout from "./pages/Dashboard/DashboardLayout";
+import DashboardHome from "./pages/Dashboard/DashboardHome";
 import DashboardUpload from "./pages/Dashboard/DashboardUpload";
-import ViewPage from "./pages/Dashboard/ViewPage";
-import AddPage from "./pages/Dashboard/AddPage";
-import EditPage from "./pages/Dashboard/EditPage";
-import DeletePage from "./pages/Dashboard/DeletePage";
 
+import ViewPage from "./pages/Dashboard/Students/ViewPage";
+import AddPage from "./pages/Dashboard/Students/AddPage";
+import EditPage from "./pages/Dashboard/Students/EditPage";
+import DeletePage from "./pages/Dashboard/Students/DeletePage";
 
 import TopNavbar from "./components/TopNavbar";
 import Footer from "./components/Footer";
 import ProtectedRoute from "./components/ProtectedRoute";
-import DashboardLayout from "./pages/Dashboard/DashboardLayout";
 
 const App = () => {
   return (
     <BrowserRouter>
-     
       <TopNavbar />
 
       <Routes>
-        
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
-        
+        {/* Dashboard with Sidebar */}
         <Route
           path="/dashboard"
           element={
@@ -38,14 +36,22 @@ const App = () => {
             </ProtectedRoute>
           }
         >
-          
-          <Route index element={<DashboardUpload />} />
+          {/* Dashboard Home */}
+          <Route index element={<DashboardHome />} />
 
-          
-          <Route path="view" element={<ViewPage />} />
-          <Route path="add" element={<AddPage />} />
-          <Route path="edit" element={<EditPage />} />
-          <Route path="delete" element={<DeletePage />} />
+          {/* Students Tab */}
+          <Route path="students/view" element={<ViewPage />} />
+          <Route path="students/add" element={<AddPage />} />
+          <Route path="students/edit" element={<EditPage />} />
+          <Route path="students/delete" element={<DeletePage />} />
+
+          {/* Bulk Upload */}
+          <Route path="bulk-upload" element={<DashboardUpload />} />
+
+          {/* Future placeholders */}
+          <Route path="fee-payment" element={<div>Fee Payment Placeholder</div>} />
+          <Route path="fee-structure" element={<div>Fee Structure Placeholder</div>} />
+          <Route path="fee-reports" element={<div>Fee Reports Placeholder</div>} />
         </Route>
       </Routes>
 
