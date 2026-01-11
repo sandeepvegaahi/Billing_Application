@@ -39,10 +39,8 @@ const DeletePage = () => {
       className="p-4 shadow-sm rounded-4 mx-auto"
       style={{ maxWidth: "500px" }}
     >
-      {/* Header */}
       <h5 className="mb-4 text-center fw-bold text-danger">Delete Student</h5>
 
-      {/* Input */}
       <Form.Control
         placeholder="Enter HT Number"
         value={htNumber}
@@ -50,7 +48,7 @@ const DeletePage = () => {
         className="mb-3 shadow-sm"
       />
 
-      {/* Delete Button */}
+      
       <Button
         variant="danger"
         onClick={handleDelete}

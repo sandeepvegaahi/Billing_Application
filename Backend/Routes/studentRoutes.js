@@ -15,8 +15,6 @@ const {
 } = require("../controllers/studentController");
 
 const { bulkUploadStudents } = require("../controllers/bulkStudentUpload");
-const { bulkUploadTuition } = require("../controllers/bulkTuitionUpload");
-const { bulkUploadBus } = require("../controllers/bulkBusUpload");
 
 const upload = multer({ dest: "uploads/" });
 
@@ -30,9 +28,12 @@ router.use((req, res, next) => {
 router.get("/bulk/count", adminProtect, getBulkStudentCount);
 
 /* BULK UPLOAD */
-router.post("/bulk-upload/students", adminProtect, upload.single("file"), bulkUploadStudents);
-router.post("/bulk-upload/tuition", adminProtect, upload.single("file"), bulkUploadTuition);
-router.post("/bulk-upload/bus", adminProtect, upload.single("file"), bulkUploadBus);
+router.post(
+  "/bulk-upload/students",
+  adminProtect,
+  upload.single("file"),
+  bulkUploadStudents
+);
 
 /* SEARCH */
 router.get("/roll/:htNumber", adminProtect, getStudentByRoll);

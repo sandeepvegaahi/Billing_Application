@@ -22,6 +22,9 @@ app.get("/", (req, res) => {
 app.use("/api/admin", require("./Routes/adminRoutes"));
 app.use("/api/students", require("./Routes/studentRoutes"));
 
+// ✅ Fee Structure Routes
+app.use("/api/fee-structure", require("./Routes/feeStructureRoutes")); // <-- added here
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`✅ Server running on port ${PORT}`);

@@ -52,11 +52,9 @@ exports.getStudentById = async (req, res) => {
 /* ================= UPDATE STUDENT ================= */
 exports.updateStudent = async (req, res) => {
   try {
-    const student = await Student.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true }
-    );
+    const student = await Student.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+    });
 
     if (!student) return sendError(res, "Student not found", 404);
 

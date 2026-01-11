@@ -3,6 +3,7 @@ import api from "../api/api";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import bgImage from "../assets/bg-login.jpg";
+import { notifyAuthChange } from "../utils/authEvents";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -30,7 +31,7 @@ const Login = () => {
         password,
       });
 
-      // Store admin details
+      // ✅ Save token
       localStorage.setItem("adminToken", data.token);
       localStorage.setItem(
         "adminInfo",
@@ -40,6 +41,9 @@ const Login = () => {
           email: data.email,
         })
       );
+
+      // 🔥 Update navbar immediately
+      notifyAuthChange();
 
       Swal.fire({
         icon: "success",

@@ -1,27 +1,54 @@
 import { Nav } from "react-bootstrap";
 import { NavLink } from "react-router-dom";
+import "../Styles/dashboard.css";
 
 const DashboardNavbar = () => {
   return (
-    <Nav className="flex-column bg-light p-3 shadow-sm" style={{ minWidth: "200px" }}>
-      <Nav.Link as={NavLink} to="/dashboard" end>
+    <Nav className="flex-column p-3 shadow-sm sidebar" style={{ minWidth: "200px", backgroundColor: "#f8f9fa" }}>
+
+      <NavLink
+        to="/dashboard"
+        end
+        className={({ isActive }) => (isActive ? "sidebar-link active-link" : "sidebar-link")}
+      >
         Dashboard
-      </Nav.Link>
-      <Nav.Link as={NavLink} to="/dashboard/students/view">
+      </NavLink>
+
+      <NavLink
+        to="/dashboard/students/view"
+        className={({ isActive }) => (isActive ? "sidebar-link active-link" : "sidebar-link")}
+      >
         Students
-      </Nav.Link>
-      <Nav.Link as={NavLink} to="/dashboard/bulk-upload">
+      </NavLink>
+
+      <NavLink
+        to="/dashboard/bulk-upload"
+        className={({ isActive }) => (isActive ? "sidebar-link active-link" : "sidebar-link")}
+      >
         Bulk Upload
-      </Nav.Link>
-      <Nav.Link as={NavLink} to="/dashboard/fee-payment">
+      </NavLink>
+
+      <NavLink
+        to="/dashboard/fee-payment"
+        className={({ isActive }) => (isActive ? "sidebar-link active-link" : "sidebar-link")}
+      >
         Fee Payment
-      </Nav.Link>
-      <Nav.Link as={NavLink} to="/dashboard/fee-structure">
+      </NavLink>
+
+      <NavLink
+        to="/dashboard/fee-structure"
+        className={({ isActive }) => (isActive ? "sidebar-link active-link" : "sidebar-link")}
+      >
         Fee Structure
-      </Nav.Link>
-      <Nav.Link as={NavLink} to="/dashboard/fee-reports">
+      </NavLink>
+
+      <NavLink
+        to="/dashboard/fee-reports"
+        className={({ isActive }) => (isActive ? "sidebar-link active-link" : "sidebar-link")}
+      >
         Fee Reports
-      </Nav.Link>
+      </NavLink>
+
     </Nav>
   );
 };

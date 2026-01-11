@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom"; // ✅ added for navigation
+import { useNavigate } from "react-router-dom"; 
 import api from "../../../api/api";
 import { Table, Button, Form, InputGroup, Card } from "react-bootstrap";
 import Swal from "sweetalert2";
@@ -7,7 +7,7 @@ import { notifyDashboardUpdate } from "../../../utils/dashboardEvents";
 
 const ViewStudents = () => {
   const token = localStorage.getItem("adminToken");
-  const navigate = useNavigate(); // ✅ initialize navigate
+  const navigate = useNavigate(); 
 
   const [students, setStudents] = useState([]);
   const [search, setSearch] = useState("");
@@ -37,7 +37,6 @@ const ViewStudents = () => {
     "busFee",
   ];
 
-  // Fetch students from backend
   const fetchStudents = async () => {
     try {
       const res = await api.get("/students", {
@@ -58,7 +57,6 @@ const ViewStudents = () => {
     fetchStudents();
   }, []);
 
-  // Filter students
   const filteredStudents = students.filter(
     (s) =>
       s.htNumber?.toLowerCase().includes(search.toLowerCase()) ||
@@ -66,7 +64,6 @@ const ViewStudents = () => {
       s.branch?.toLowerCase().includes(search.toLowerCase())
   );
 
-  // Edit
   const handleEdit = (student) => {
     setEditId(student._id);
     setEditData({ ...student });
@@ -88,14 +85,13 @@ const ViewStudents = () => {
         fetchStudents();
         setEditId(null);
         setEditData({});
-        notifyDashboardUpdate(); // ✅ DASHBOARD UPDATE
+        notifyDashboardUpdate();
       }
     } catch (err) {
       Swal.fire("Error", "Failed to update student.", "error");
     }
   };
 
-  // Delete
   const handleDelete = async (id) => {
     const confirm = await Swal.fire({
       title: "Are you sure?",
@@ -114,7 +110,7 @@ const ViewStudents = () => {
         if (res.data?.success) {
           setStudents(students.filter((s) => s._id !== id));
           Swal.fire("Deleted!", "Student has been deleted.", "success");
-          notifyDashboardUpdate(); // ✅ DASHBOARD UPDATE
+          notifyDashboardUpdate();
         }
       } catch (err) {
         Swal.fire("Error", "Failed to delete student.", "error");
@@ -122,7 +118,6 @@ const ViewStudents = () => {
     }
   };
 
-  // Add new
   const handleAddNew = () => {
     setAddingNew(true);
     setNewStudent({});
@@ -139,7 +134,7 @@ const ViewStudents = () => {
         fetchStudents();
         setAddingNew(false);
         setNewStudent({});
-        notifyDashboardUpdate(); // ✅ DASHBOARD UPDATE
+        notifyDashboardUpdate();
       }
     } catch (err) {
       Swal.fire("Error", "Failed to add student.", "error");
@@ -165,7 +160,6 @@ const ViewStudents = () => {
         />
       </InputGroup>
 
-      {/* ✅ Add Student + Bulk Upload Buttons */}
       <div className="mb-3 d-flex gap-2">
         <Button variant="success" onClick={handleAddNew}>
           Add Student
@@ -205,13 +199,12 @@ const ViewStudents = () => {
                   )}
                 </td>
               ))}
-              <td>
+              <td className="d-flex gap-2">
                 {editId === s._id ? (
                   <>
                     <Button
                       variant="success"
                       size="sm"
-                      className="me-2"
                       onClick={() => handleSave(s._id)}
                     >
                       Save
@@ -229,7 +222,6 @@ const ViewStudents = () => {
                     <Button
                       variant="warning"
                       size="sm"
-                      className="me-2"
                       onClick={() => handleEdit(s)}
                     >
                       Edit
@@ -260,11 +252,10 @@ const ViewStudents = () => {
                   />
                 </td>
               ))}
-              <td>
+              <td className="d-flex gap-2">
                 <Button
                   variant="success"
                   size="sm"
-                  className="me-2"
                   onClick={handleSaveNew}
                 >
                   Save

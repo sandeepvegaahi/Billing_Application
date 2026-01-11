@@ -37,8 +37,7 @@ exports.bulkUploadStudents = async (req, res) => {
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
     const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
 
-    let inserted = 0;
-    let updated = 0;
+    let inserted = 0; // newly added
     const failedRows = [];
 
     for (let i = 0; i < rows.length; i++) {
@@ -84,11 +83,11 @@ exports.bulkUploadStudents = async (req, res) => {
         };
 
         if (existingStudent) {
-          await Student.updateOne({ htNumber }, { $set: studentData });
-          updated++;
+          // Already exists, keep old data unchanged
+          continue;
         } else {
           await Student.create(studentData);
-          inserted++;
+          inserted++; // count new student
         }
       } catch (err) {
         failedRows.push({ row: i + 2, error: err.message });
@@ -96,59 +95,14 @@ exports.bulkUploadStudents = async (req, res) => {
     }
 
     fs.unlinkSync(req.file.path);
-    res.json({ success: true, inserted, updated, failed: failedRows.length, failedRows });
 
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-};
-
-/* ================= BULK UPLOAD TUITION ================= */
-exports.bulkUploadTuition = async (req, res) => {
-  try {
-    if (!req.file) return res.status(400).json({ message: "Excel file required" });
-
-    const workbook = XLSX.readFile(req.file.path);
-    const sheet = workbook.Sheets[workbook.SheetNames[0]];
-    const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
-
-    let updated = 0;
-    for (const row of rows) {
-      const htNumber = String(row.htNumber || row.htnumber).trim().toUpperCase();
-      const tuitionFee = extractNumber(row.tuitionFee || row.tutionfee || 0);
-
-      const student = await Student.findOneAndUpdate({ htNumber }, { TutionFee: tuitionFee });
-      if (student) updated++;
-    }
-
-    fs.unlinkSync(req.file.path);
-    res.json({ success: true, updated });
-
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-};
-
-/* ================= BULK UPLOAD BUS FEE ================= */
-exports.bulkUploadBus = async (req, res) => {
-  try {
-    if (!req.file) return res.status(400).json({ message: "Excel file required" });
-
-    const workbook = XLSX.readFile(req.file.path);
-    const sheet = workbook.Sheets[workbook.SheetNames[0]];
-    const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
-
-    let updated = 0;
-    for (const row of rows) {
-      const htNumber = String(row.htNumber || row.htnumber).trim().toUpperCase();
-      const busFee = extractNumber(row.busFee || row.busfee || 0);
-
-      const student = await Student.findOneAndUpdate({ htNumber }, { busFee });
-      if (student) updated++;
-    }
-
-    fs.unlinkSync(req.file.path);
-    res.json({ success: true, updated });
+    res.json({
+      success: true,
+      inserted,       // number of new students added
+      failed: failedRows.length,
+      failedRows,
+      message: `${inserted} student${inserted !== 1 ? "s" : ""} added successfully!`
+    });
 
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });

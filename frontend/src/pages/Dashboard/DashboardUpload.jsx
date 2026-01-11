@@ -9,7 +9,7 @@ const DashboardUpload = () => {
   const [uploading, setUploading] = useState(false);
   const token = localStorage.getItem("adminToken");
 
-  const fileInputRef = useRef(null); // ✅ ADDED
+  const fileInputRef = useRef(null);
 
   const handleFileChange = (e) => setFile(e.target.files[0]);
 
@@ -26,10 +26,29 @@ const DashboardUpload = () => {
       });
 
       if (res.data?.success) {
-        Swal.fire("Success", "Students uploaded successfully!", "success");
+        const { inserted, failed, failedRows } = res.data;
+
+        // Build message
+        let message = "";
+        if (inserted > 0) message += `${inserted} student(s) added successfully.<br/>`;
+        if (failed > 0) {
+          message += `${failed} row(s) failed:<br/><ul>`;
+          failedRows.forEach((row) => {
+            message += `<li>Row ${row.row}: ${row.error}</li>`;
+          });
+          message += "</ul>";
+        }
+
+        Swal.fire({
+          icon: "success",
+          title: "Upload Completed",
+          html: message || "No new students were added.",
+          width: 600,
+        });
+
         setFile(null);
-        if (fileInputRef.current) fileInputRef.current.value = ""; // ✅ RESET INPUT
-        notifyDashboardUpdate(); // ✅ UPDATE DASHBOARD COUNT
+        if (fileInputRef.current) fileInputRef.current.value = "";
+        notifyDashboardUpdate();
       }
     } catch (err) {
       console.error(err);
@@ -45,14 +64,14 @@ const DashboardUpload = () => {
 
   return (
     <Card className="p-4 w-50 mx-auto shadow-sm rounded-4 mt-4">
-      <h5 className="mb-3">Bulk Upload Students</h5>
+      <h5 className="mb-3 text-center">Bulk Upload Students</h5>
       <Form.Group controlId="fileUpload" className="mb-3">
         <Form.Label>Select Excel File</Form.Label>
         <Form.Control
           type="file"
           accept=".xlsx, .xls"
           onChange={handleFileChange}
-          ref={fileInputRef} // ✅ ADDED
+          ref={fileInputRef}
         />
       </Form.Group>
       <Button variant="primary" onClick={handleUpload} disabled={uploading}>

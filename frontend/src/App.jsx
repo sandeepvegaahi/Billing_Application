@@ -13,6 +13,8 @@ import AddPage from "./pages/Dashboard/Students/AddPage";
 import EditPage from "./pages/Dashboard/Students/EditPage";
 import DeletePage from "./pages/Dashboard/Students/DeletePage";
 
+import FeeStructurePage from "./pages/Dashboard/FeeStructurePage"; // ✅ import Fee Structure page
+
 import TopNavbar from "./components/TopNavbar";
 import Footer from "./components/Footer";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -48,9 +50,9 @@ const App = () => {
           {/* Bulk Upload */}
           <Route path="bulk-upload" element={<DashboardUpload />} />
 
-          {/* Future placeholders */}
+          {/* Fee Pages */}
           <Route path="fee-payment" element={<div>Fee Payment Placeholder</div>} />
-          <Route path="fee-structure" element={<div>Fee Structure Placeholder</div>} />
+          <Route path="fee-structure" element={<FeeStructurePage />} /> {/* ✅ updated */}
           <Route path="fee-reports" element={<div>Fee Reports Placeholder</div>} />
         </Route>
       </Routes>
