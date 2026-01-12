@@ -18,6 +18,7 @@ import FeeStructurePage from "./pages/Dashboard/FeeStructurePage"; // ✅ import
 import TopNavbar from "./components/TopNavbar";
 import Footer from "./components/Footer";
 import ProtectedRoute from "./components/ProtectedRoute";
+import FeeTransactionPage from "./pages/Dashboard/FeeTransactionPage";
 
 const App = () => {
   return (
@@ -51,7 +52,8 @@ const App = () => {
           <Route path="bulk-upload" element={<DashboardUpload />} />
 
           {/* Fee Pages */}
-          <Route path="fee-payment" element={<div>Fee Payment Placeholder</div>} />
+          <Route path="fee-payment" element={<FeeTransactionPage/>} />
+
           <Route path="fee-structure" element={<FeeStructurePage />} /> {/* ✅ updated */}
           <Route path="fee-reports" element={<div>Fee Reports Placeholder</div>} />
         </Route>

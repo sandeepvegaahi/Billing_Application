@@ -1,0 +1,22 @@
+.fee-slider {
+  display: flex;
+  overflow-x: auto;
+  gap: 10px;
+  padding: 10px 0;
+}
+
+.fee-tab {
+  flex: 0 0 auto;
+  padding: 10px 20px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: 0.3s;
+}
+
+.fee-tab.active {
+  background-color: #0d6efd;
+  color: white;
+  border-color: #0d6efd;
+}

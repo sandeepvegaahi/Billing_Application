@@ -3,7 +3,7 @@ import api from "../../api/api";
 import { Card, Button, Row, Col, Form, Table } from "react-bootstrap";
 import Swal from "sweetalert2";
 
-/* ================= DEFAULT FORM STATE (BEST PRACTICE) ================= */
+/* ================= DEFAULT FORM STATE ================= */
 const initialFormState = {
   category: "",
   customCategoryName: "",
@@ -26,7 +26,7 @@ const FeeStructurePage = () => {
     try {
       const res = await api.get("/fee-structure");
       setFees(res.data.data);
-    } catch (err) {
+    } catch {
       Swal.fire("Error", "Failed to fetch fees", "error");
     }
   };
@@ -41,11 +41,10 @@ const FeeStructurePage = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  /* ================= ADD FEE (STRICT DUPLICATE) ================= */
+  /* ================= ADD FEE ================= */
   const handleAddFee = async (e) => {
     e.preventDefault();
 
-    // 🚫 STRICT CATEGORY DUPLICATE CHECK
     const duplicate = fees.find((f) => {
       if (formData.category !== "CUSTOM") {
         return f.category === formData.category;
@@ -60,7 +59,7 @@ const FeeStructurePage = () => {
     if (duplicate) {
       return Swal.fire(
         "Duplicate Category",
-        "This fee category already exists. You cannot add it again.",
+        "This fee category already exists",
         "warning"
       );
     }
@@ -73,10 +72,7 @@ const FeeStructurePage = () => {
       });
 
       Swal.fire("Success", "Fee added successfully", "success");
-
-      // ✅ AUTO RESET FORM
       setFormData(initialFormState);
-
       fetchFees();
     } catch (err) {
       Swal.fire(
@@ -91,15 +87,13 @@ const FeeStructurePage = () => {
   const handleDelete = async (id) => {
     const confirm = await Swal.fire({
       title: "Are you sure?",
-      text: "This will delete the fee",
       icon: "warning",
       showCancelButton: true,
-      confirmButtonText: "Yes, delete it!",
     });
 
     if (confirm.isConfirmed) {
       await api.delete(`/fee-structure/${id}`);
-      Swal.fire("Deleted!", "Fee has been deleted.", "success");
+      Swal.fire("Deleted", "Fee deleted", "success");
       fetchFees();
     }
   };
@@ -117,13 +111,14 @@ const FeeStructurePage = () => {
         amount: Number(editData.amount),
         currentBillNumber: Number(editData.currentBillNumber),
       });
+
       setEditId(null);
-      Swal.fire("Saved!", "Fee updated successfully.", "success");
+      Swal.fire("Saved", "Fee updated", "success");
       fetchFees();
     } catch (err) {
       Swal.fire(
         "Error",
-        err.response?.data?.message || "Failed to update fee",
+        err.response?.data?.message || "Update failed",
         "error"
       );
     }
@@ -252,51 +247,138 @@ const FeeStructurePage = () => {
             </thead>
 
             <tbody>
-              {fees.length === 0 ? (
-                <tr>
-                  <td colSpan="6" className="text-center">
-                    No data
+              {fees.map((fee) => (
+                <tr key={fee._id}>
+                  <td>
+                    {editId === fee._id ? (
+                      fee.category === "CUSTOM" ? (
+                        <Form.Control
+                          value={editData.customCategoryName}
+                          onChange={(e) =>
+                            setEditData({
+                              ...editData,
+                              customCategoryName: e.target.value,
+                            })
+                          }
+                        />
+                      ) : (
+                        fee.category
+                      )
+                    ) : fee.category === "CUSTOM" ? (
+                      fee.customCategoryName
+                    ) : (
+                      fee.category
+                    )}
+                  </td>
+
+                  <td>
+                    {editId === fee._id ? (
+                      <Form.Control
+                        type="number"
+                        value={editData.amount}
+                        onChange={(e) =>
+                          setEditData({ ...editData, amount: e.target.value })
+                        }
+                      />
+                    ) : (
+                      `₹${fee.amount}`
+                    )}
+                  </td>
+
+                  <td>
+                    {editId === fee._id ? (
+                      <Form.Control
+                        value={editData.year}
+                        onChange={(e) =>
+                          setEditData({ ...editData, year: e.target.value })
+                        }
+                      />
+                    ) : (
+                      fee.year
+                    )}
+                  </td>
+
+                  <td>
+                    {editId === fee._id ? (
+                      <Form.Control
+                        value={editData.billPrefix}
+                        onChange={(e) =>
+                          setEditData({
+                            ...editData,
+                            billPrefix: e.target.value,
+                          })
+                        }
+                      />
+                    ) : (
+                      fee.billPrefix
+                    )}
+                  </td>
+
+                  <td>
+                    {editId === fee._id ? (
+                      <Form.Control
+                        type="number"
+                        value={editData.currentBillNumber}
+                        onChange={(e) =>
+                          setEditData({
+                            ...editData,
+                            currentBillNumber: e.target.value,
+                          })
+                        }
+                      />
+                    ) : (
+                      fee.currentBillNumber
+                    )}
+                  </td>
+
+                  <td>
+                    {editId === fee._id ? (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="success"
+                          className="me-2"
+                          onClick={() => handleSave(fee._id)}
+                        >
+                          Save
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={handleCancelEdit}
+                        >
+                          Cancel
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button
+                          size="sm"
+                          className="me-2"
+                          onClick={() => handleEdit(fee)}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="success"
+                          className="me-2"
+                          onClick={() => handleGenerateBill(fee)}
+                        >
+                          Bill
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="danger"
+                          onClick={() => handleDelete(fee._id)}
+                        >
+                          Delete
+                        </Button>
+                      </>
+                    )}
                   </td>
                 </tr>
-              ) : (
-                fees.map((fee) => (
-                  <tr key={fee._id}>
-                    <td>
-                      {fee.category === "CUSTOM"
-                        ? fee.customCategoryName
-                        : fee.category}
-                    </td>
-                    <td>₹{fee.amount}</td>
-                    <td>{fee.year}</td>
-                    <td>{fee.billPrefix}</td>
-                    <td>{fee.currentBillNumber}</td>
-                    <td>
-                      <Button
-                        size="sm"
-                        className="me-2"
-                        onClick={() => handleEdit(fee)}
-                      >
-                        Edit
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="success"
-                        className="me-2"
-                        onClick={() => handleGenerateBill(fee)}
-                      >
-                        Bill
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="danger"
-                        onClick={() => handleDelete(fee._id)}
-                      >
-                        Delete
-                      </Button>
-                    </td>
-                  </tr>
-                ))
-              )}
+              ))}
             </tbody>
           </Table>
         </Card.Body>

@@ -1,4 +1,4 @@
-const FeeStructure = require("../models/FeeStructure");
+const FeeStructure = require("../Models/FeeStructure");
 
 /* ================= CREATE FEE ================= */
 exports.createFee = async (req, res) => {
