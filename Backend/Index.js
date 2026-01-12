@@ -34,6 +34,8 @@ app.use("/api/fee-payments", require("./Routes/feePaymentUploadRoutes"));
 // Fee Structure routes
 app.use("/api/fee-structure", require("./Routes/feeStructureRoutes"));
 // app.use("/api/fee-transaction", require("./Routes/feeTransactionRoutes"));
+app.use("/api/fee-transaction", require("./Routes/feeTransactionRoutes"));
+
 
 // ================= START SERVER =================
 const PORT = process.env.PORT || 3000;

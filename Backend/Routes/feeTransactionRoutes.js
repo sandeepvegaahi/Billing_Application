@@ -1,9 +1,9 @@
-// const express = require("express");
-// const router = express.Router();
-// const controller = require("../controllers/feeTransactionController");
+const express = require("express");
+const router = express.Router();
+const adminProtect = require("../Middleware/authMiddleware");
+const { getStudentFeeDetails } = require("../controllers/feeTransactionController");
 
-// router.get("/search/:htNumber", controller.searchStudentFee);
-// router.post("/pay", controller.makePayment);
-// router.get("/history/:htNumber", controller.paymentHistory);
+// Fetch student fee details by HT number
+router.get("/student/:htNumber", adminProtect, getStudentFeeDetails);
 
-// module.exports = router;
+module.exports = router;

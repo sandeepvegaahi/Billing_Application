@@ -1,130 +1,43 @@
-// const Student = require("../Models/Student");
-// const FeeTransaction = require("../Models/FeeTransaction");
+const Student = require("../Models/StudentBulk");
+const FeeStructure = require("../Models/FeeStructure");
+const FeeTransaction = require("../Models/FeeTransaction");
 
-// /* ================= SEARCH STUDENT ================= */
-// exports.searchStudentFee = async (req, res) => {
-//   try {
-//     const { htNumber } = req.params;
+/* ================= GET STUDENT FEE DETAILS ================= */
+exports.getStudentFeeDetails = async (req, res) => {
+  try {
+    const { htNumber } = req.params;
 
-//     const student = await Student.findOne({
-//       htNumber: htNumber.toUpperCase()
-//     });
+    // Get student from bulk upload
+    const student = await Student.findOne({ htNumber: htNumber.toUpperCase() });
+    if (!student) {
+      return res.status(404).json({ success: false, message: "Student not found" });
+    }
 
-//     if (!student) {
-//       return res.status(404).json({
-//         success: false,
-//         message: "Student not found"
-//       });
-//     }
+    // Get fees from FeeStructure (exclude TuitionFee & BusFee)
+    const feesFromStructure = await FeeStructure.find().sort({ createdAt: 1 });
 
-//     let transaction = await FeeTransaction.findOne({
-//       student: student._id
-//     });
+    const feeDetails = feesFromStructure.map((f) => {
+      const name = f.category === "CUSTOM" ? f.customCategoryName : f.category;
+      if (name === "TuitionFee" || name === "BusFee") return null; // skip
+      return { category: name, amount: f.amount };
+    }).filter(f => f !== null);
 
-//     if (!transaction) {
-//       transaction = await FeeTransaction.create({
-//         student: student._id,
-//         fees: [],
-//         receipts: []
-//       });
-//     }
+    // Add TuitionFee & BusFee from student bulk
+    if (student.TutionFee) feeDetails.unshift({ category: "TuitionFee", amount: student.TutionFee });
+    if (student.busFee) feeDetails.splice(1, 0, { category: "BusFee", amount: student.busFee });
 
-//     res.status(200).json({
-//       success: true,
-//       student,
-//       fees: transaction.fees,
-//       transaction
-//     });
-
-//   } catch (error) {
-//     console.error("SEARCH ERROR:", error);
-//     res.status(500).json({
-//       success: false,
-//       message: "Internal server error"
-//     });
-//   }
-// };
-
-// /* ================= PAY FEE ================= */
-// exports.makePayment = async (req, res) => {
-//   try {
-//     const { htNumber, category, customCategoryName, amount } = req.body;
-
-//     const student = await Student.findOne({ htNumber });
-//     if (!student) {
-//       return res.status(404).json({ message: "Student not found" });
-//     }
-
-//     const transaction = await FeeTransaction.findOne({
-//       student: student._id
-//     });
-
-//     let fee = transaction.fees.find(
-//       f =>
-//         f.category === category &&
-//         (f.customCategoryName || null) === (customCategoryName || null)
-//     );
-
-//     if (!fee) {
-//       fee = {
-//         category,
-//         customCategoryName,
-//         totalAmount: amount,
-//         paidAmount: 0,
-//         dueAmount: amount
-//       };
-//       transaction.fees.push(fee);
-//     }
-
-//     fee.paidAmount += amount;
-//     fee.dueAmount = fee.totalAmount - fee.paidAmount;
-
-//     transaction.receipts.push({
-//       billNo: `BILL-${Date.now()}`,
-//       category,
-//       amount
-//     });
-
-//     await transaction.save();
-
-//     res.status(200).json({
-//       success: true,
-//       message: "Payment successful"
-//     });
-
-//   } catch (error) {
-//     console.error("PAY ERROR:", error);
-//     res.status(500).json({
-//       success: false,
-//       message: "Payment failed"
-//     });
-//   }
-// };
-
-// /* ================= PAYMENT HISTORY ================= */
-// exports.paymentHistory = async (req, res) => {
-//   try {
-//     const { htNumber } = req.params;
-
-//     const student = await Student.findOne({ htNumber });
-//     if (!student) {
-//       return res.status(404).json({ message: "Student not found" });
-//     }
-
-//     const transaction = await FeeTransaction.findOne({
-//       student: student._id
-//     });
-
-//     res.status(200).json({
-//       success: true,
-//       transaction
-//     });
-
-//   } catch (error) {
-//     console.error("HISTORY ERROR:", error);
-//     res.status(500).json({
-//       success: false,
-//       message: "Failed to fetch history"
-//     });
-//   }
-// };
+    res.status(200).json({
+      success: true,
+      student: {
+        htNumber: student.htNumber,
+        studentName: student.studentName,
+        branch: student.branch,
+        year: student.year,
+      },
+      fees: feeDetails,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
