@@ -2,7 +2,13 @@ const mongoose = require("mongoose");
 
 const studentBulkSchema = new mongoose.Schema(
   {
-    htNumber: { type: String, required: true, unique: true, trim: true, uppercase: true },
+    htNumber: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+      uppercase: true,
+    },
     studentName: { type: String, required: true, trim: true },
     branch: { type: String, required: true, trim: true, uppercase: true },
     fatherName: { type: String, trim: true, default: "" },
@@ -11,11 +17,16 @@ const studentBulkSchema = new mongoose.Schema(
     address: { type: String, trim: true, default: "" },
     aadharNumber: { type: String, unique: true, sparse: true },
     email: { type: String, lowercase: true, trim: true, default: "" },
-    admissionType: { type: String, enum: ["CONVENER", "MANAGEMENT"], default: "CONVENER" },
+    admissionType: {
+      type: String,
+      enum: ["CONVENER", "MANAGEMENT"],
+      default: "CONVENER",
+    },
     casteCategory: { type: String, trim: true, uppercase: true, default: "" },
     gender: { type: String, enum: ["MALE", "FEMALE"], default: "MALE" },
     admissionNumber: { type: String, unique: true, sparse: true },
     admissionDate: { type: Date, default: null },
+   
     dateOfBirth: { type: Date, default: null },
     TutionFee: { type: Number, default: 0 },
     admissionFee: { type: Number, default: 0 },

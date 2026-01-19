@@ -45,11 +45,22 @@ const DashboardUpload = () => {
       });
 
       if (res.data?.success) {
-        const { inserted, failed, failedRows } = res.data;
+        const {
+          inserted = 0,
+          updated = 0,
+          failed = 0,
+          failedRows = [],
+        } = res.data;
 
         let message = "";
-        if (inserted > 0)
-          message += `${inserted} record(s) uploaded successfully.<br/>`;
+
+        if (uploadType === "STUDENT" && inserted > 0) {
+          message += `${inserted} student(s) added successfully.<br/>`;
+        }
+
+        if (uploadType === "FEE" && updated > 0) {
+          message += `${updated} student fee record(s) updated successfully.<br/>`;
+        }
 
         if (failed > 0) {
           message += `${failed} row(s) failed:<br/><ul>`;
@@ -62,11 +73,11 @@ const DashboardUpload = () => {
         Swal.fire({
           icon: "success",
           title: "Upload Completed",
-          html: message || "No records were added",
+          html: message || "No records were updated",
           width: 600,
         });
 
-        // reset
+        // reset form
         setFile(null);
         setFeeCategory("");
         setUploadType("");
@@ -103,7 +114,7 @@ const DashboardUpload = () => {
         </Form.Select>
       </Form.Group>
 
-      {/* Fee Category (only for fee upload) */}
+      {/* Fee Category */}
       {uploadType === "FEE" && (
         <Form.Group className="mb-3">
           <Form.Label>Fee Category</Form.Label>
@@ -117,13 +128,12 @@ const DashboardUpload = () => {
             <option value="ExamFee">Exam Fee</option>
             <option value="UniversityFee">University Fee</option>
             <option value="CondonationFee">Condonation Fee</option>
-            <option value="CUSTOM">Other Fee</option>
           </Form.Select>
         </Form.Group>
       )}
 
       {/* File */}
-      <Form.Group controlId="fileUpload" className="mb-3">
+      <Form.Group className="mb-3">
         <Form.Label>Select Excel File</Form.Label>
         <Form.Control
           type="file"

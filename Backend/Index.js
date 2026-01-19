@@ -29,7 +29,8 @@ app.use("/api/admin", require("./Routes/adminRoutes"));
 app.use("/api/students", require("./Routes/studentRoutes"));
 
 // Fee Payments bulk upload routes
-app.use("/api/fee-payments", require("./Routes/feePaymentUploadRoutes"));
+app.use("/api/fee-payments", require("./Routes/feeBulkUploadRoutes"));
+
 
 // Fee Structure routes
 app.use("/api/fee-structure", require("./Routes/feeStructureRoutes"));

@@ -26,12 +26,9 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const { data } = await api.post("/admin/login", {
-        email,
-        password,
-      });
+      const { data } = await api.post("/admin/login", { email, password });
 
-      // ✅ Save token
+      // ✅ Save token and admin info
       localStorage.setItem("adminToken", data.token);
       localStorage.setItem(
         "adminInfo",
@@ -42,7 +39,7 @@ const Login = () => {
         })
       );
 
-      // 🔥 Update navbar immediately
+      // 🔥 Notify navbar immediately
       notifyAuthChange();
 
       Swal.fire({

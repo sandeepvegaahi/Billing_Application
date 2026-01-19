@@ -12,8 +12,13 @@ const TopNavbar = () => {
   };
 
   useEffect(() => {
-    checkAuth();
+    // 🔹 Clear old token on first load to always show Login
+    localStorage.removeItem("adminToken");
+    localStorage.removeItem("adminInfo");
 
+    checkAuth(); // now isLoggedIn = false
+
+    // Listen for login/logout events
     window.addEventListener("authChange", checkAuth);
     return () => {
       window.removeEventListener("authChange", checkAuth);
@@ -24,9 +29,7 @@ const TopNavbar = () => {
     localStorage.removeItem("adminToken");
     localStorage.removeItem("adminInfo");
 
-    // 🔥 Update navbar immediately
-    notifyAuthChange();
-
+    notifyAuthChange(); // update navbar immediately
     navigate("/login");
   };
 

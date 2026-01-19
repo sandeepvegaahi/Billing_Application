@@ -15,9 +15,15 @@ const feePaymentSchema = new mongoose.Schema(
       trim: true,
     },
 
-    academicYear: {
-      type: Number, // 1,2,3,4
+    studentName: {
+      type: String,
       required: true,
+      trim: true,
+    },
+
+    academicYear: {
+      type: Number,
+      required: true, // 1,2,3,4
     },
 
     feeCategory: {
@@ -33,13 +39,8 @@ const feePaymentSchema = new mongoose.Schema(
       required: true,
     },
 
-    amountPaid: {
+    amount: {
       type: Number,
-      required: true,
-    },
-
-    billNumber: {
-      type: String,
       required: true,
     },
 

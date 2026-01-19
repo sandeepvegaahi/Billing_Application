@@ -3,7 +3,7 @@ const fs = require("fs");
 const Student = require("../Models/StudentBulk");
 const FeePayment = require("../Models/FeePayment");
 
-/* ================= NORMALIZE KEYS ================= */
+/* ================= NORMALIZE EXCEL KEYS ================= */
 const normalizeRow = (row) => {
   const normalized = {};
   Object.keys(row).forEach((key) => {
@@ -13,57 +13,97 @@ const normalizeRow = (row) => {
   return normalized;
 };
 
-/* ================= NUMBER CLEAN ================= */
 const extractNumber = (value) => {
-  if (!value) return 0;
+  if (value === undefined || value === null || value === "") return undefined;
   const num = String(value).replace(/[^0-9]/g, "");
-  return num ? Number(num) : 0;
+  return num ? Number(num) : undefined;
 };
 
-/* ================= BULK UPLOAD FEE PAYMENTS ================= */
+const normalizeAcademicYear = (value) => {
+  if (!value) return undefined;
+  const v = String(value).toLowerCase();
+  if (v.includes("1")) return 1;
+  if (v.includes("2")) return 2;
+  if (v.includes("3")) return 3;
+  if (v.includes("4")) return 4;
+  return undefined;
+};
+
+const normalizeName = (name) =>
+  String(name || "").trim().replace(/\s+/g, " ").toLowerCase();
+
 exports.bulkUploadFeePayments = async (req, res) => {
   try {
     if (!req.file)
-      return res.status(400).json({ message: "Excel file required" });
+      return res.status(400).json({ success: false, message: "Excel file required" });
 
     const { feeCategory } = req.body;
     if (!feeCategory)
-      return res.status(400).json({ message: "feeCategory is required" });
+      return res.status(400).json({ success: false, message: "Fee category required" });
 
     const workbook = XLSX.readFile(req.file.path);
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
     const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
 
+    let updated = 0;
     let inserted = 0;
     const failedRows = [];
+    const skippedRows = [];
 
     for (let i = 0; i < rows.length; i++) {
       try {
         const row = normalizeRow(rows[i]);
-
-        if (!row.htnumber || !row.billnumber || !row.amount || !row.academicyear)
-          throw new Error("Required fields missing");
+        if (!row.htnumber) throw new Error("HT Number missing");
 
         const htNumber = String(row.htnumber).trim().toUpperCase();
-        const student = await Student.findOne({ htNumber });
-        if (!student) throw new Error("Student not found");
+        const studentNameExcel = normalizeName(row.studentname);
+        const amount = extractNumber(row.amount);
+        const academicYear = normalizeAcademicYear(row.academicyear);
 
-        // ✅ Avoid duplicate per fee category
-        const exists = await FeePayment.findOne({
-          billNumber: row.billnumber,
-          feeCategory: feeCategory,
-        });
-        if (exists) continue;
+        if (!studentNameExcel) throw new Error("Student name missing");
+        if (amount === undefined) throw new Error("Amount missing");
+        if (!academicYear) throw new Error("Academic year invalid");
+
+        const student = await Student.findOne({ htNumber });
+        if (!student) throw new Error("HT Number not found in Student table");
+
+        const studentNameDB = normalizeName(student.studentName);
+        if (studentNameDB !== studentNameExcel)
+          throw new Error("HT Number or Name mismatch with Student table");
+
+        /* ================= CASE 1: BUS / TUITION ================= */
+        if (feeCategory === "BusFee" || feeCategory === "TuitionFee") {
+          const updateField = feeCategory === "BusFee" ? "busFee" : "TutionFee";
+
+          // 🔹 Update Student table (persistent)
+          await Student.updateOne({ htNumber }, { $set: { [updateField]: amount } });
+
+          // 🔹 Also store in FeePayment for history if needed
+          await FeePayment.updateOne(
+            { htNumber, feeCategory, academicYear },
+            { $set: { student: student._id, amount, studentName: student.studentName, paymentMode: "EXCEL" } },
+            { upsert: true } // ✅ insert if not exists
+          );
+
+          updated++;
+          continue;
+        }
+
+        /* ================= CASE 2: OTHER FEES → FeePayment ================= */
+        const existingFee = await FeePayment.findOne({ htNumber, feeCategory, academicYear });
+        if (existingFee) {
+          skippedRows.push(i + 2);
+          continue;
+        }
 
         await FeePayment.create({
           student: student._id,
           htNumber,
-          academicYear: Number(row.academicyear),
+          studentName: student.studentName,
+          academicYear,
           feeCategory,
-          amountPaid: extractNumber(row.amount),
-          billNumber: String(row.billnumber).trim(),
+          amount,
           paymentMode: "EXCEL",
-          paymentDate: row.paymentdate ? new Date(row.paymentdate) : new Date(),
         });
 
         inserted++;
@@ -74,14 +114,32 @@ exports.bulkUploadFeePayments = async (req, res) => {
 
     fs.unlinkSync(req.file.path);
 
-    res.json({
+    // 🔹 Build structured messages
+    const messages = [];
+    if (updated > 0) messages.push(`Updated Bus/Tuition fees for ${updated} student(s).`);
+    if (inserted > 0) messages.push(`Inserted ${inserted} new fee record(s).`);
+    if (skippedRows.length > 0) messages.push(`Skipped ${skippedRows.length} existing record(s).`);
+    if (failedRows.length > 0) messages.push(`Failed rows: ${failedRows.map(f => f.row).join(", ")}`);
+    if (inserted === 0 && updated === 0 && failedRows.length === 0)
+      messages.push("No new records to add or update.");
+
+    return res.json({
       success: true,
+      updated,
       inserted,
+      skipped: skippedRows.length,
       failed: failedRows.length,
       failedRows,
-      message: `${inserted} payment(s) uploaded successfully`,
+      alertType: failedRows.length > 0 ? "warning" : "success",
+      message: messages.join("\n"),
     });
+
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    console.error("BULK FEE UPLOAD ERROR:", err);
+    return res.status(500).json({
+      success: false,
+      alertType: "error",
+      message: err.message,
+    });
   }
 };
