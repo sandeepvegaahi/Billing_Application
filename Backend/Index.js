@@ -31,12 +31,19 @@ app.use("/api/students", require("./Routes/studentRoutes"));
 // Fee Payments bulk upload routes
 app.use("/api/fee-payments", require("./Routes/feeBulkUploadRoutes"));
 
-
 // Fee Structure routes
 app.use("/api/fee-structure", require("./Routes/feeStructureRoutes"));
-// app.use("/api/fee-transaction", require("./Routes/feeTransactionRoutes"));
-app.use("/api/fee-transaction", require("./Routes/feeTransactionRoutes"));
 
+// ✅ New: Fee categories (including CUSTOM) for upload dropdown
+app.use("/api/fee-structure/categories", require("./Routes/feeCategoryRoutes"));
+
+// // ✅ Optional: Fee templates for download
+// app.use("/api/templates", require("./Routes/feeTemplateRoutes"));
+// after all other routes
+app.use("/api/templates", require("./Routes/templateRoutes"));
+
+// Fee transaction routes
+app.use("/api/fee-transaction", require("./Routes/feeTransactionRoutes"));
 
 // ================= START SERVER =================
 const PORT = process.env.PORT || 3000;
