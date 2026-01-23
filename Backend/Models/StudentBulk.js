@@ -35,7 +35,7 @@ const studentBulkSchema = new mongoose.Schema(
   {
     timestamps: true,
     versionKey: false,
-    collection: "studentbulkks", // ← this must match your DB
+    collection: "studentbulkks", 
   }
 );
 

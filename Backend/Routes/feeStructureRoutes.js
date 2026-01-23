@@ -10,7 +10,7 @@ const {
   generateBill,
 } = require("../controllers/feeStructureController");
 
-// ✅ PROTECTED ROUTES
+
 router.post("/", adminProtect, createFee);
 router.get("/", adminProtect, getFees);
 router.put("/:id", adminProtect, updateFee);

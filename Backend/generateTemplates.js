@@ -2,11 +2,11 @@ const ExcelJS = require("exceljs");
 const fs = require("fs");
 const path = require("path");
 
-// Create templates folder if not exists
+
 const templatesDir = path.join(__dirname, "templates");
 if (!fs.existsSync(templatesDir)) fs.mkdirSync(templatesDir);
 
-// ------------------ Student Template ------------------
+
 const studentColumns = [
   "htNumber",
   "studentName",
@@ -36,7 +36,6 @@ studentWorkbook.xlsx
   .writeFile(path.join(templatesDir, "Student_Bulk_Upload_Template.xlsx"))
   .then(() => console.log("✅ Student template created"));
 
-// ------------------ Fee Templates ------------------
 const feeCategories = [
   "TuitionFee",
   "admissionFee",

@@ -1,33 +1,4 @@
-// // const express = require("express");
-// // const router = express.Router();
-// // const adminProtect = require("../Middleware/authMiddleware");
 
-// // const {
-// //   downloadStudentTemplate,
-// //   downloadFeeTemplate,
-// // } = require("../controllers/templateController");
-
-// // // ✅ Student bulk upload template
-// // router.get("/students", adminProtect, downloadStudentTemplate);
-
-// // // ✅ Fee bulk upload template (category based)
-// // router.get("/fees/:category", adminProtect, downloadFeeTemplate);
-
-// // module.exports = router;
-// const express = require("express");
-// const router = express.Router();
-// const {
-//   downloadStudentTemplate,
-//   downloadFeeTemplate,
-// } = require("../controllers/templateController");
-
-// /* Student Bulk Upload Template */
-// router.get("/students", downloadStudentTemplate);
-
-// /* Fee Upload Template (category-wise) */
-// router.get("/fees/:category", downloadFeeTemplate);
-
-// module.exports = router;
 const express = require("express");
 const path = require("path");
 const fs = require("fs");
@@ -37,7 +8,7 @@ const getTemplatePath = (fileName) => {
   return path.resolve(__dirname, "../templates", fileName);
 };
 
-// Student template
+
 router.get("/students", (req, res) => {
   const fileName = "Student_Bulk_Upload_Template.xlsx";
   const filePath = getTemplatePath(fileName);
@@ -49,7 +20,7 @@ router.get("/students", (req, res) => {
   res.download(filePath, fileName);
 });
 
-// Fee template (category-wise)
+
 router.get("/fees/:category", (req, res) => {
   const category = req.params.category;
   const fileName = `${category}_Fee_Upload_Template.xlsx`;

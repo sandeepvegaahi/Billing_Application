@@ -1,6 +1,5 @@
 const Student = require("../Models/StudentBulk");
 
-/* ================= HELPER FUNCTION ================= */
 const sendError = (res, error, status = 500) => {
   return res.status(status).json({
     success: false,
@@ -8,7 +7,7 @@ const sendError = (res, error, status = 500) => {
   });
 };
 
-/* ================= CREATE STUDENT ================= */
+
 exports.createStudent = async (req, res) => {
   try {
     const student = await Student.create(req.body);
@@ -23,7 +22,7 @@ exports.createStudent = async (req, res) => {
   }
 };
 
-/* ================= GET ALL STUDENTS ================= */
+
 exports.getStudents = async (req, res) => {
   try {
     const students = await Student.find();
@@ -37,7 +36,6 @@ exports.getStudents = async (req, res) => {
   }
 };
 
-/* ================= GET STUDENT BY ID ================= */
 exports.getStudentById = async (req, res) => {
   try {
     const student = await Student.findById(req.params.id);
@@ -49,7 +47,7 @@ exports.getStudentById = async (req, res) => {
   }
 };
 
-/* ================= UPDATE STUDENT ================= */
+
 exports.updateStudent = async (req, res) => {
   try {
     const student = await Student.findByIdAndUpdate(req.params.id, req.body, {
@@ -68,7 +66,7 @@ exports.updateStudent = async (req, res) => {
   }
 };
 
-/* ================= DELETE STUDENT ================= */
+
 exports.deleteStudent = async (req, res) => {
   try {
     const student = await Student.findByIdAndDelete(req.params.id);
@@ -83,7 +81,7 @@ exports.deleteStudent = async (req, res) => {
   }
 };
 
-/* ================= GET STUDENT BY ROLL ================= */
+
 exports.getStudentByRoll = async (req, res) => {
   try {
     const { htNumber } = req.params;
@@ -100,7 +98,7 @@ exports.getStudentByRoll = async (req, res) => {
   }
 };
 
-/* ================= TOTAL STUDENT COUNT ================= */
+
 exports.getBulkStudentCount = async (req, res) => {
   try {
     const count = await Student.countDocuments();

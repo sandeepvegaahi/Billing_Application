@@ -1,6 +1,4 @@
-// const XLSX = require("xlsx");
 
-/* ================= STUDENT TEMPLATE ================= */
 exports.downloadStudentTemplate = (req, res) => {
   const columns = [
     {
@@ -43,7 +41,7 @@ exports.downloadStudentTemplate = (req, res) => {
   res.send(buffer);
 };
 
-/* ================= FEE TEMPLATE ================= */
+
 exports.downloadFeeTemplate = (req, res) => {
   const { category } = req.params;
 
@@ -53,7 +51,7 @@ exports.downloadFeeTemplate = (req, res) => {
       studentName: "",
       branch: "",
       year: "",
-      category: category, // auto-filled for clarity
+      category: category, 
       amountPaid: "",
       paymentMode: "",
     },

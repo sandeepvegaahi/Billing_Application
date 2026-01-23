@@ -3,7 +3,7 @@ import api from "../../api/api";
 import { Card, Button, Row, Col, Form, Table } from "react-bootstrap";
 import Swal from "sweetalert2";
 
-/* ================= DEFAULT FORM STATE ================= */
+
 const initialFormState = {
   category: "",
   customCategoryName: "",
@@ -21,7 +21,7 @@ const FeeStructurePage = () => {
   const [editId, setEditId] = useState(null);
   const [editData, setEditData] = useState({});
 
-  /* ================= FETCH FEES ================= */
+  
   const fetchFees = async () => {
     try {
       const res = await api.get("/fee-structure");
@@ -35,13 +35,13 @@ const FeeStructurePage = () => {
     fetchFees();
   }, []);
 
-  /* ================= HANDLE CHANGE ================= */
+  
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  /* ================= ADD FEE ================= */
+ 
   const handleAddFee = async (e) => {
     e.preventDefault();
 
@@ -83,7 +83,7 @@ const FeeStructurePage = () => {
     }
   };
 
-  /* ================= DELETE ================= */
+ 
   const handleDelete = async (id) => {
     const confirm = await Swal.fire({
       title: "Are you sure?",
@@ -98,7 +98,7 @@ const FeeStructurePage = () => {
     }
   };
 
-  /* ================= EDIT ================= */
+ 
   const handleEdit = (fee) => {
     setEditId(fee._id);
     setEditData({ ...fee });
@@ -128,7 +128,7 @@ const FeeStructurePage = () => {
     setEditId(null);
   };
 
-  /* ================= BILL PREVIEW ================= */
+
   const handleGenerateBill = (fee) => {
     setNextBill(
       `Next bill for ${
@@ -141,7 +141,7 @@ const FeeStructurePage = () => {
     <div>
       <h3 className="mb-4">Fee Structure Management</h3>
 
-      {/* ================= ADD FEE ================= */}
+      
       <Card className="mb-4 shadow-sm">
         <Card.Body>
           <Card.Title>Add Fee</Card.Title>
@@ -229,7 +229,7 @@ const FeeStructurePage = () => {
         </Card.Body>
       </Card>
 
-      {/* ================= TABLE ================= */}
+     
       <Card className="shadow-sm">
         <Card.Body>
           <Card.Title>Fee List</Card.Title>

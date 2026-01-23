@@ -1,6 +1,6 @@
 const FeeStructure = require("../Models/FeeStructure");
 
-/* ================= CREATE FEE ================= */
+
 exports.createFee = async (req, res) => {
   try {
     const {
@@ -12,7 +12,7 @@ exports.createFee = async (req, res) => {
       currentBillNumber,
     } = req.body;
 
-    // 🔒 BASIC VALIDATION
+  
     if (
       !category ||
       amount === undefined ||
@@ -26,7 +26,7 @@ exports.createFee = async (req, res) => {
       });
     }
 
-    // 🔒 CUSTOM CATEGORY VALIDATION
+   
     if (category === "CUSTOM" && !customCategoryName) {
       return res.status(400).json({
         success: false,
@@ -56,7 +56,7 @@ exports.createFee = async (req, res) => {
   }
 };
 
-/* ================= GET ALL FEES ================= */
+
 exports.getFees = async (req, res) => {
   try {
     const fees = await FeeStructure.find().sort({ createdAt: -1 });
@@ -66,7 +66,7 @@ exports.getFees = async (req, res) => {
   }
 };
 
-/* ================= UPDATE FEE ================= */
+
 exports.updateFee = async (req, res) => {
   try {
     const updatedFee = await FeeStructure.findByIdAndUpdate(
@@ -92,7 +92,7 @@ exports.updateFee = async (req, res) => {
   }
 };
 
-/* ================= DELETE FEE ================= */
+
 exports.deleteFee = async (req, res) => {
   try {
     const deletedFee = await FeeStructure.findByIdAndDelete(req.params.id);
@@ -112,7 +112,7 @@ exports.deleteFee = async (req, res) => {
   }
 };
 
-/* ================= GENERATE BILL ================= */
+
 exports.generateBill = async (req, res) => {
   try {
     const { category, customCategoryName } = req.body;

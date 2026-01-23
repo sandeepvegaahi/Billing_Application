@@ -18,16 +18,16 @@ const { bulkUploadStudents } = require("../controllers/bulkStudentUpload");
 
 const upload = multer({ dest: "uploads/" });
 
-/* 🔥 DEBUG */
+
 router.use((req, res, next) => {
   console.log("STUDENT ROUTE HIT:", req.method, req.originalUrl);
   next();
 });
 
-/* ✅ COUNT MUST BE FIRST */
+
 router.get("/bulk/count", adminProtect, getBulkStudentCount);
 
-/* BULK UPLOAD */
+
 router.post(
   "/bulk-upload/students",
   adminProtect,
@@ -35,10 +35,10 @@ router.post(
   bulkUploadStudents
 );
 
-/* SEARCH */
+
 router.get("/roll/:htNumber", adminProtect, getStudentByRoll);
 
-/* CRUD */
+
 router.post("/register", adminProtect, createStudent);
 router.get("/", adminProtect, getStudents);
 router.put("/:id", adminProtect, updateStudent);

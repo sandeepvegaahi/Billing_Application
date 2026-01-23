@@ -2,7 +2,7 @@ const XLSX = require("xlsx");
 const fs = require("fs");
 const Student = require("../Models/StudentBulk");
 
-/* ================= NORMALIZE KEYS ================= */
+
 const normalizeRow = (row) => {
   const normalized = {};
   Object.keys(row).forEach((key) => {
@@ -12,7 +12,7 @@ const normalizeRow = (row) => {
   return normalized;
 };
 
-/* ================= EXCEL DATE ================= */
+
 const excelDateToJSDate = (value) => {
   if (!value) return null;
   if (value instanceof Date) return value;
@@ -23,14 +23,14 @@ const excelDateToJSDate = (value) => {
   return isNaN(parsed) ? null : parsed;
 };
 
-/* ================= NUMBER CLEAN ================= */
+
 const extractNumber = (value) => {
   if (value === undefined || value === null || value === "") return undefined;
   const num = String(value).replace(/[^0-9]/g, "");
   return num ? Number(num) : undefined;
 };
 
-/* ================= ACADEMIC YEAR NORMALIZE ================= */
+
 const normalizeAcademicYear = (value) => {
   if (!value) return undefined;
   const v = String(value).toLowerCase();
@@ -43,7 +43,7 @@ const normalizeAcademicYear = (value) => {
   return undefined;
 };
 
-/* ================= BULK UPLOAD STUDENTS ================= */
+
 exports.bulkUploadStudents = async (req, res) => {
   try {
     if (!req.file) {
@@ -69,7 +69,6 @@ exports.bulkUploadStudents = async (req, res) => {
         const htNumber = String(row.htnumber).trim().toUpperCase();
         const existingStudent = await Student.findOne({ htNumber });
 
-        /* ================= COMMON DATA ================= */
         const admissionType =
           String(row.admissiontype || "").toUpperCase() === "MANAGEMENT"
             ? "MANAGEMENT"
@@ -80,14 +79,13 @@ exports.bulkUploadStudents = async (req, res) => {
             ? "FEMALE"
             : "MALE";
 
-        /* ================= FEES & YEAR ================= */
         const busFee = extractNumber(row.busfee);
         const TutionFee = extractNumber(
           row.tutionfee || row.tuitionfee || row.collegetuitionfee || row.fee
         );
         const academicYear = normalizeAcademicYear(row.academicyear);
 
-        /* ================= EXISTING STUDENT → UPDATE ================= */
+      
         if (existingStudent) {
           const updateFields = {};
 
@@ -105,7 +103,7 @@ exports.bulkUploadStudents = async (req, res) => {
           continue;
         }
 
-        /* ================= NEW STUDENT → INSERT ================= */
+        
         if (!row.studentname || !row.branch) {
           throw new Error("Student Name or Branch missing for new student");
         }

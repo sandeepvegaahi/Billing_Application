@@ -8,20 +8,20 @@ const DashboardUpload = () => {
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
 
-  const [uploadType, setUploadType] = useState(""); // STUDENT | FEE
+  const [uploadType, setUploadType] = useState(""); 
   const [feeCategory, setFeeCategory] = useState("");
   const [feeCategories, setFeeCategories] = useState([]);
 
   const token = localStorage.getItem("adminToken");
   const fileInputRef = useRef(null);
 
-  // ✅ Fetch fee categories dynamically from backend
+
   useEffect(() => {
     if (uploadType === "FEE") {
       const fetchFeeCategories = async () => {
         try {
           const res = await api.get("/fee-structure/categories/all");
-          // Expect backend to return: [{ value: "TuitionFee", label: "Tuition Fee" }, ...]
+        
           setFeeCategories(res.data.data);
         } catch (err) {
           Swal.fire("Error", "Failed to fetch fee categories", "error");
@@ -31,10 +31,10 @@ const DashboardUpload = () => {
     }
   }, [uploadType]);
 
-  // File change
+  
   const handleFileChange = (e) => setFile(e.target.files[0]);
 
-  // ---------------- TEMPLATE DOWNLOAD ----------------
+
   const handleDownloadTemplate = async () => {
     try {
       let url = "";
@@ -75,7 +75,7 @@ const DashboardUpload = () => {
     }
   };
 
-  // ---------------- UPLOAD ----------------
+  
   const handleUpload = async () => {
     if (!uploadType)
       return Swal.fire("Error", "Please select upload type", "error");
@@ -128,7 +128,7 @@ const DashboardUpload = () => {
         width: 600,
       });
 
-      // reset
+      
       setFile(null);
       setFeeCategory("");
       setUploadType("");
@@ -150,7 +150,7 @@ const DashboardUpload = () => {
     <Card className="p-4 w-50 mx-auto shadow-sm rounded-4 mt-4">
       <h5 className="mb-3 text-center">Bulk Upload Center</h5>
 
-      {/* Upload Type */}
+      
       <Form.Group className="mb-3">
         <Form.Label>Upload Type</Form.Label>
         <Form.Select
@@ -163,7 +163,7 @@ const DashboardUpload = () => {
         </Form.Select>
       </Form.Group>
 
-      {/* Fee Category */}
+     
       {uploadType === "FEE" && (
         <Form.Group className="mb-3">
           <Form.Label>Fee Category</Form.Label>
@@ -182,7 +182,7 @@ const DashboardUpload = () => {
         </Form.Group>
       )}
 
-      {/* File Upload */}
+     
       <Form.Group className="mb-2">
         <Form.Label>Select Excel File</Form.Label>
         <Form.Control
@@ -193,7 +193,7 @@ const DashboardUpload = () => {
         />
       </Form.Group>
 
-      {/* Template Download */}
+    
       {uploadType && (
         <div
           className="mb-3 text-primary"

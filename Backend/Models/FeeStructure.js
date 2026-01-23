@@ -9,13 +9,13 @@ const feeStructureSchema = new mongoose.Schema({
       "ExamFee",
       "UniversityFee",
       "CondonationFee",
-      "CUSTOM"          // 👈 IMPORTANT
+      "CUSTOM"         
     ],
     required: true
   },
 
   customCategoryName: {
-    type: String,       // 👈 LibraryFee, HostelFee, etc
+    type: String,      
     default: null
   },
 
