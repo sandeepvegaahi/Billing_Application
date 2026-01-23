@@ -14,7 +14,14 @@ function calculateCurrentYear(admissionDate) {
   ) {
     year -= 1;
   }
-  return year + 1; // Academic year starts from 1
+
+  year = year + 1; // Academic year starts from 1
+
+  // Limit year to max 4
+  if (year > 4) year = 4;
+  if (year < 1) year = 1; // optional: minimum 1
+
+  return year;
 }
 
 /* ================= GET STUDENT FEES ================= */
