@@ -8,20 +8,19 @@ const DashboardUpload = () => {
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
 
-  const [uploadType, setUploadType] = useState(""); 
+  const [uploadType, setUploadType] = useState("");
   const [feeCategory, setFeeCategory] = useState("");
   const [feeCategories, setFeeCategories] = useState([]);
 
   const token = localStorage.getItem("adminToken");
   const fileInputRef = useRef(null);
 
-
+  // Fetch fee categories whenever FEE or PAID upload type is selected
   useEffect(() => {
-    if (uploadType === "FEE") {
+    if (uploadType === "FEE" || uploadType === "PAID") {
       const fetchFeeCategories = async () => {
         try {
           const res = await api.get("/fee-structure/categories/all");
-        
           setFeeCategories(res.data.data);
         } catch (err) {
           Swal.fire("Error", "Failed to fetch fee categories", "error");
@@ -31,9 +30,7 @@ const DashboardUpload = () => {
     }
   }, [uploadType]);
 
-  
   const handleFileChange = (e) => setFile(e.target.files[0]);
-
 
   const handleDownloadTemplate = async () => {
     try {
@@ -43,12 +40,12 @@ const DashboardUpload = () => {
       if (uploadType === "STUDENT") {
         url = "/templates/students";
         filename = "Student_Bulk_Upload_Template.xlsx";
-      } else if (uploadType === "FEE") {
+      } else if (uploadType === "FEE" || uploadType === "PAID") {
         if (!feeCategory) {
           return Swal.fire(
             "Select Fee Category",
             "Please select a fee category",
-            "warning"
+            "warning",
           );
         }
         url = `/templates/fees/${feeCategory}`;
@@ -58,7 +55,6 @@ const DashboardUpload = () => {
       }
 
       const res = await api.get(url, { responseType: "blob" });
-
       const blob = new Blob([res.data]);
       const downloadUrl = window.URL.createObjectURL(blob);
 
@@ -75,7 +71,6 @@ const DashboardUpload = () => {
     }
   };
 
-  
   const handleUpload = async () => {
     if (!uploadType)
       return Swal.fire("Error", "Please select upload type", "error");
@@ -83,7 +78,7 @@ const DashboardUpload = () => {
     if (!file)
       return Swal.fire("Error", "Please select an Excel file", "error");
 
-    if (uploadType === "FEE" && !feeCategory)
+    if ((uploadType === "FEE" || uploadType === "PAID") && !feeCategory)
       return Swal.fire("Error", "Please select Fee Category", "error");
 
     const formData = new FormData();
@@ -95,6 +90,9 @@ const DashboardUpload = () => {
     } else if (uploadType === "FEE") {
       apiUrl = "/fee-payments/bulk-upload";
       formData.append("feeCategory", feeCategory);
+    } else if (uploadType === "PAID") {
+      apiUrl = "/fee-transactions-bulk/bulk-upload-paid";
+      formData.append("feeCategory", feeCategory);
     }
 
     setUploading(true);
@@ -104,7 +102,12 @@ const DashboardUpload = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      const { inserted = 0, updated = 0, failed = 0, failedRows = [] } = res.data;
+      const {
+        inserted = 0,
+        updated = 0,
+        failed = 0,
+        failedRows = [],
+      } = res.data;
 
       let message = "";
       if (uploadType === "STUDENT" && inserted > 0) {
@@ -128,7 +131,6 @@ const DashboardUpload = () => {
         width: 600,
       });
 
-      
       setFile(null);
       setFeeCategory("");
       setUploadType("");
@@ -139,7 +141,7 @@ const DashboardUpload = () => {
       Swal.fire(
         "Upload Failed",
         err.response?.data?.message || "Something went wrong",
-        "error"
+        "error",
       );
     } finally {
       setUploading(false);
@@ -150,7 +152,6 @@ const DashboardUpload = () => {
     <Card className="p-4 w-50 mx-auto shadow-sm rounded-4 mt-4">
       <h5 className="mb-3 text-center">Bulk Upload Center</h5>
 
-      
       <Form.Group className="mb-3">
         <Form.Label>Upload Type</Form.Label>
         <Form.Select
@@ -160,11 +161,11 @@ const DashboardUpload = () => {
           <option value="">Select Upload Type</option>
           <option value="STUDENT">Student Bulk Upload</option>
           <option value="FEE">Fee Payment Upload</option>
+          <option value="PAID">Paid Amount Upload (Offline)</option>
         </Form.Select>
       </Form.Group>
 
-     
-      {uploadType === "FEE" && (
+      {(uploadType === "FEE" || uploadType === "PAID") && (
         <Form.Group className="mb-3">
           <Form.Label>Fee Category</Form.Label>
           <Form.Select
@@ -182,7 +183,6 @@ const DashboardUpload = () => {
         </Form.Group>
       )}
 
-     
       <Form.Group className="mb-2">
         <Form.Label>Select Excel File</Form.Label>
         <Form.Control
@@ -193,7 +193,6 @@ const DashboardUpload = () => {
         />
       </Form.Group>
 
-    
       {uploadType && (
         <div
           className="mb-3 text-primary"

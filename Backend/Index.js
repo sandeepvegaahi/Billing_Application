@@ -28,7 +28,7 @@ app.use("/api/students", require("./Routes/studentRoutes"));
 
 
 app.use("/api/fee-payments", require("./Routes/feeBulkUploadRoutes"));
-//app.use("/api/fee-transactions-bulk", require("./Routes/bulkPaidTransactionRoutes"));
+app.use("/api/fee-transactions-bulk", require("./Routes/bulkPaidTransactionRoutes"));
 
 
 
