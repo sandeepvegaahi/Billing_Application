@@ -13,26 +13,27 @@ import AddPage from "./pages/Dashboard/Students/AddPage";
 import EditPage from "./pages/Dashboard/Students/EditPage";
 import DeletePage from "./pages/Dashboard/Students/DeletePage";
 
-import FeeStructurePage from "./pages/Dashboard/FeeStructurePage"; // ✅ import Fee Structure page
+import FeeStructurePage from "./pages/Dashboard/FeeStructurePage";
 import FeeTransactionPage from "./pages/Dashboard/FeeTransactionPage";
+
 
 import TopNavbar from "./components/TopNavbar";
 import Footer from "./components/Footer";
 import ProtectedRoute from "./components/ProtectedRoute";
+import ReportsPage from "./pages/Dashboard/ReportsPage";
 
 const App = () => {
   return (
     <BrowserRouter>
-      {/* Navbar will auto-update on login/logout */}
       <TopNavbar />
 
       <Routes>
-        {/* Public Routes */}
+      
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
-        {/* Dashboard with Sidebar (Protected) */}
+        
         <Route
           path="/dashboard"
           element={
@@ -41,22 +42,23 @@ const App = () => {
             </ProtectedRoute>
           }
         >
-          {/* Dashboard Home */}
+         
           <Route index element={<DashboardHome />} />
 
-          {/* Students Tab */}
+          
           <Route path="students/view" element={<ViewPage />} />
           <Route path="students/add" element={<AddPage />} />
           <Route path="students/edit" element={<EditPage />} />
           <Route path="students/delete" element={<DeletePage />} />
 
-          {/* Bulk Upload */}
+         
           <Route path="bulk-upload" element={<DashboardUpload />} />
 
-          {/* Fee Pages */}
+        
           <Route path="fee-payment" element={<FeeTransactionPage />} />
           <Route path="fee-structure" element={<FeeStructurePage />} />
-          <Route path="fee-reports" element={<div>Fee Reports Placeholder</div>} />
+
+          <Route path="fee-reports" element={<ReportsPage />} />
         </Route>
       </Routes>
 

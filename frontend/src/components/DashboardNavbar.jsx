@@ -46,7 +46,7 @@ const DashboardNavbar = () => {
         to="/dashboard/fee-reports"
         className={({ isActive }) => (isActive ? "sidebar-link active-link" : "sidebar-link")}
       >
-        Fee Reports
+         Reports
       </NavLink>
 
     </Nav>
