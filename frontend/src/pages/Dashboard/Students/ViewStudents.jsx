@@ -1,10 +1,8 @@
 
-
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import api from "../../../api/api";
-import { Table, Button, Form, InputGroup, Card } from "react-bootstrap";
+import api from "../../../api/api"; 
+import { Table, Button, Form, InputGroup, Card, Row, Col } from "react-bootstrap";
 import Swal from "sweetalert2";
 import { notifyDashboardUpdate } from "../../../utils/dashboardEvents";
 
@@ -14,14 +12,16 @@ const ViewStudents = () => {
 
   const [students, setStudents] = useState([]);
   const [search, setSearch] = useState("");
+  const [branchFilter, setBranchFilter] = useState("");      
+  const [yearFilter, setYearFilter] = useState("");          
   const [editId, setEditId] = useState(null);
   const [editData, setEditData] = useState({});
   const [addingNew, setAddingNew] = useState(false);
   const [newStudent, setNewStudent] = useState({});
   const [feeColumns, setFeeColumns] = useState([]);
-  const [feeAmounts, setFeeAmounts] = useState({}); // amounts for UniversityFee & ExamFee
+  const [feeAmounts, setFeeAmounts] = useState({});
 
-  // 🔒 EXISTING STATIC COLUMNS
+  
   const staticColumns = [
     "htNumber",
     "studentName",
@@ -37,16 +37,16 @@ const ViewStudents = () => {
     "gender",
     "admissionNumber",
     "admissionDate",
+    "graduationYear",
     "dateOfBirth",
     "TutionFee",
-    "admissionFee",
+   // "admissionFee",
     "busFee",
   ];
 
-  // ✅ FINAL COLUMNS = static + dynamic fees
   const columns = [...staticColumns, ...feeColumns];
 
-  // 🔹 Fetch students from backend
+ 
   const fetchStudents = async () => {
     try {
       const res = await api.get("/students", {
@@ -63,7 +63,7 @@ const ViewStudents = () => {
     }
   };
 
-  // 🔹 Fetch fee structure to create dynamic fee columns and amounts for UniversityFee & ExamFee
+ 
   const fetchFeeColumns = async () => {
     try {
       const res = await api.get("/fee-structure", {
@@ -82,8 +82,6 @@ const ViewStudents = () => {
 
           if (!["TuitionFee", "TutionFee", "BusFee", "busFee"].includes(key)) {
             dynamicFees.push(key);
-
-            // Only store amounts for UniversityFee & ExamFee
             if (["UniversityFee", "ExamFee"].includes(f.category)) {
               amounts[key] = f.amount ?? 0;
             }
@@ -103,15 +101,19 @@ const ViewStudents = () => {
     fetchFeeColumns();
   }, []);
 
-  // 🔹 Filtered students for search
-  const filteredStudents = students.filter(
-    (s) =>
+  
+  const filteredStudents = students.filter((s) => {
+    const matchesSearch =
       s.htNumber?.toLowerCase().includes(search.toLowerCase()) ||
       s.studentName?.toLowerCase().includes(search.toLowerCase()) ||
-      s.branch?.toLowerCase().includes(search.toLowerCase())
-  );
+      s.branch?.toLowerCase().includes(search.toLowerCase());
 
-  // 🔹 Handle editing
+    const matchesBranch = branchFilter ? s.branch === branchFilter : true;
+    const matchesYear = yearFilter ? s.currentYear === parseInt(yearFilter) : true;
+
+    return matchesSearch && matchesBranch && matchesYear;
+  });
+
   const handleEdit = (student) => {
     setEditId(student._id);
     setEditData({ ...student });
@@ -124,9 +126,13 @@ const ViewStudents = () => {
 
   const handleSave = async (id) => {
     try {
-      const res = await api.put(`/students/${id}`, editData, {
+      const payload = { ...editData };
+      delete payload.graduationYear; 
+
+      const res = await api.put(`/students/${id}`, payload, {
         headers: { Authorization: `Bearer ${token}` },
       });
+
       if (res.data?.success) {
         Swal.fire("Success", "Student updated successfully!", "success");
         fetchStudents();
@@ -135,11 +141,11 @@ const ViewStudents = () => {
         notifyDashboardUpdate();
       }
     } catch (err) {
+      console.error("Update failed:", err);
       Swal.fire("Error", "Failed to update student.", "error");
     }
   };
 
-  // 🔹 Handle delete
   const handleDelete = async (id) => {
     const confirm = await Swal.fire({
       title: "Are you sure?",
@@ -165,7 +171,6 @@ const ViewStudents = () => {
     }
   };
 
-  // 🔹 Handle adding new student
   const handleAddNew = () => {
     setAddingNew(true);
     setNewStudent({});
@@ -173,7 +178,10 @@ const ViewStudents = () => {
 
   const handleSaveNew = async () => {
     try {
-      const res = await api.post("/students/register", newStudent, {
+      const payload = { ...newStudent };
+      delete payload.graduationYear;
+
+      const res = await api.post("/students/register", payload, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -184,7 +192,8 @@ const ViewStudents = () => {
         setNewStudent({});
         notifyDashboardUpdate();
       }
-    } catch {
+    } catch (err) {
+      console.error("Add student failed:", err);
       Swal.fire("Error", "Failed to add student.", "error");
     }
   };
@@ -193,13 +202,36 @@ const ViewStudents = () => {
     <Card className="p-4 shadow-sm rounded-4 mx-auto w-100">
       <h5>View Students</h5>
 
-      <InputGroup className="mb-3">
-        <Form.Control
-          placeholder="Search by Hall Ticket, Name, Branch"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-      </InputGroup>
+     
+      <Row className="mb-3">
+        <Col md={6}>
+          <InputGroup>
+            <Form.Control
+              placeholder="Search by Hall Ticket, Name, Branch"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </InputGroup>
+        </Col>
+
+        <Col md={3}>
+          <Form.Select value={branchFilter} onChange={(e) => setBranchFilter(e.target.value)}>
+            <option value="">All Branches</option>
+            {[...new Set(students.map((s) => s.branch))].map((b) => (
+              <option key={b} value={b}>{b}</option>
+            ))}
+          </Form.Select>
+        </Col>
+
+        <Col md={3}>
+          <Form.Select value={yearFilter} onChange={(e) => setYearFilter(e.target.value)}>
+            <option value="">All Years</option>
+            {[1, 2, 3, 4].map((y) => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </Form.Select>
+        </Col>
+      </Row>
 
       <div className="mb-3 d-flex gap-2">
         <Button variant="success" onClick={handleAddNew}>
@@ -222,14 +254,11 @@ const ViewStudents = () => {
             <th>Actions</th>
           </tr>
         </thead>
-
         <tbody>
           {filteredStudents.map((s) => (
             <tr key={s._id}>
               {columns.map((col) => {
                 let value = s[col] ?? "-";
-
-                // Only override amount for UniversityFee & ExamFee
                 if (["UniversityFee", "ExamFee"].includes(col)) {
                   value = feeAmounts[col] ?? 0;
                 }
@@ -238,10 +267,21 @@ const ViewStudents = () => {
                   <td key={col}>
                     <Form.Control
                       size="sm"
-                      value={editData[col] || ""}
-                      onChange={(e) =>
-                        setEditData({ ...editData, [col]: e.target.value })
+                      type={col.includes("Date") ? "date" : "text"}
+                      value={
+                        col.includes("Date") && editData[col]
+                          ? new Date(editData[col]).toISOString().split("T")[0]
+                          : editData[col] || ""
                       }
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        const updated = { ...editData, [col]: val };
+                        if (col === "admissionDate" && val) {
+                          updated.graduationYear = new Date(val).getFullYear() + 4;
+                        }
+                        setEditData(updated);
+                      }}
+                      disabled={col === "graduationYear"}
                     />
                   </td>
                 ) : (
@@ -282,10 +322,21 @@ const ViewStudents = () => {
                 <td key={col}>
                   <Form.Control
                     size="sm"
-                    value={newStudent[col] || ""}
-                    onChange={(e) =>
-                      setNewStudent({ ...newStudent, [col]: e.target.value })
+                    type={col.includes("Date") ? "date" : "text"}
+                    value={
+                      col.includes("Date") && newStudent[col]
+                        ? new Date(newStudent[col]).toISOString().split("T")[0]
+                        : newStudent[col] || ""
                     }
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      const updated = { ...newStudent, [col]: val };
+                      if (col === "admissionDate" && val) {
+                        updated.graduationYear = new Date(val).getFullYear() + 4;
+                      }
+                      setNewStudent(updated);
+                    }}
+                    disabled={col === "graduationYear"}
                   />
                 </td>
               ))}
