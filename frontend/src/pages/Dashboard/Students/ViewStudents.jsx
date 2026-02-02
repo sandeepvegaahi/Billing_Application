@@ -1,5 +1,8 @@
+
+
+
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom"; 
+import { useNavigate } from "react-router-dom";
 import api from "../../../api/api";
 import { Table, Button, Form, InputGroup, Card } from "react-bootstrap";
 import Swal from "sweetalert2";
@@ -7,7 +10,7 @@ import { notifyDashboardUpdate } from "../../../utils/dashboardEvents";
 
 const ViewStudents = () => {
   const token = localStorage.getItem("adminToken");
-  const navigate = useNavigate(); 
+  const navigate = useNavigate();
 
   const [students, setStudents] = useState([]);
   const [search, setSearch] = useState("");
@@ -15,8 +18,11 @@ const ViewStudents = () => {
   const [editData, setEditData] = useState({});
   const [addingNew, setAddingNew] = useState(false);
   const [newStudent, setNewStudent] = useState({});
+  const [feeColumns, setFeeColumns] = useState([]);
+  const [feeAmounts, setFeeAmounts] = useState({}); // amounts for UniversityFee & ExamFee
 
-  const columns = [
+  // 🔒 EXISTING STATIC COLUMNS
+  const staticColumns = [
     "htNumber",
     "studentName",
     "branch",
@@ -37,6 +43,10 @@ const ViewStudents = () => {
     "busFee",
   ];
 
+  // ✅ FINAL COLUMNS = static + dynamic fees
+  const columns = [...staticColumns, ...feeColumns];
+
+  // 🔹 Fetch students from backend
   const fetchStudents = async () => {
     try {
       const res = await api.get("/students", {
@@ -48,15 +58,52 @@ const ViewStudents = () => {
         setStudents([]);
       }
     } catch (err) {
-      console.error(err);
+      console.error("Student fetch failed:", err);
       setStudents([]);
+    }
+  };
+
+  // 🔹 Fetch fee structure to create dynamic fee columns and amounts for UniversityFee & ExamFee
+  const fetchFeeColumns = async () => {
+    try {
+      const res = await api.get("/fee-structure", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (res.data?.success && Array.isArray(res.data.data)) {
+        const dynamicFees = [];
+        const amounts = {};
+
+        res.data.data.forEach((f) => {
+          const key =
+            f.category === "CUSTOM"
+              ? f.customCategoryName.replace(/\s+/g, "")
+              : f.category;
+
+          if (!["TuitionFee", "TutionFee", "BusFee", "busFee"].includes(key)) {
+            dynamicFees.push(key);
+
+            // Only store amounts for UniversityFee & ExamFee
+            if (["UniversityFee", "ExamFee"].includes(f.category)) {
+              amounts[key] = f.amount ?? 0;
+            }
+          }
+        });
+
+        setFeeColumns(dynamicFees);
+        setFeeAmounts(amounts);
+      }
+    } catch (err) {
+      console.error("Fee fetch failed:", err);
     }
   };
 
   useEffect(() => {
     fetchStudents();
+    fetchFeeColumns();
   }, []);
 
+  // 🔹 Filtered students for search
   const filteredStudents = students.filter(
     (s) =>
       s.htNumber?.toLowerCase().includes(search.toLowerCase()) ||
@@ -64,6 +111,7 @@ const ViewStudents = () => {
       s.branch?.toLowerCase().includes(search.toLowerCase())
   );
 
+  // 🔹 Handle editing
   const handleEdit = (student) => {
     setEditId(student._id);
     setEditData({ ...student });
@@ -79,7 +127,6 @@ const ViewStudents = () => {
       const res = await api.put(`/students/${id}`, editData, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
       if (res.data?.success) {
         Swal.fire("Success", "Student updated successfully!", "success");
         fetchStudents();
@@ -92,10 +139,10 @@ const ViewStudents = () => {
     }
   };
 
+  // 🔹 Handle delete
   const handleDelete = async (id) => {
     const confirm = await Swal.fire({
       title: "Are you sure?",
-      text: "You won't be able to revert this!",
       icon: "warning",
       showCancelButton: true,
       confirmButtonText: "Yes, delete it!",
@@ -112,12 +159,13 @@ const ViewStudents = () => {
           Swal.fire("Deleted!", "Student has been deleted.", "success");
           notifyDashboardUpdate();
         }
-      } catch (err) {
+      } catch {
         Swal.fire("Error", "Failed to delete student.", "error");
       }
     }
   };
 
+  // 🔹 Handle adding new student
   const handleAddNew = () => {
     setAddingNew(true);
     setNewStudent({});
@@ -136,23 +184,16 @@ const ViewStudents = () => {
         setNewStudent({});
         notifyDashboardUpdate();
       }
-    } catch (err) {
+    } catch {
       Swal.fire("Error", "Failed to add student.", "error");
     }
   };
 
-  const handleCancelNew = () => {
-    setAddingNew(false);
-    setNewStudent({});
-  };
-
   return (
     <Card className="p-4 shadow-sm rounded-4 mx-auto w-100">
-      <div className="d-flex justify-content-between mb-3">
-        <h5>View Students</h5>
-      </div>
+      <h5>View Students</h5>
 
-      <InputGroup className="mb-2">
+      <InputGroup className="mb-3">
         <Form.Control
           placeholder="Search by Hall Ticket, Name, Branch"
           value={search}
@@ -164,8 +205,8 @@ const ViewStudents = () => {
         <Button variant="success" onClick={handleAddNew}>
           Add Student
         </Button>
-        <Button 
-          variant="primary" 
+        <Button
+          variant="primary"
           onClick={() => navigate("/dashboard/bulk-upload")}
         >
           Bulk Upload
@@ -181,12 +222,20 @@ const ViewStudents = () => {
             <th>Actions</th>
           </tr>
         </thead>
+
         <tbody>
           {filteredStudents.map((s) => (
             <tr key={s._id}>
-              {columns.map((col) => (
-                <td key={col}>
-                  {editId === s._id ? (
+              {columns.map((col) => {
+                let value = s[col] ?? "-";
+
+                // Only override amount for UniversityFee & ExamFee
+                if (["UniversityFee", "ExamFee"].includes(col)) {
+                  value = feeAmounts[col] ?? 0;
+                }
+
+                return editId === s._id ? (
+                  <td key={col}>
                     <Form.Control
                       size="sm"
                       value={editData[col] || ""}
@@ -194,41 +243,29 @@ const ViewStudents = () => {
                         setEditData({ ...editData, [col]: e.target.value })
                       }
                     />
-                  ) : (
-                    s[col] || "-"
-                  )}
-                </td>
-              ))}
+                  </td>
+                ) : (
+                  <td key={col}>{value}</td>
+                );
+              })}
               <td className="d-flex gap-2">
                 {editId === s._id ? (
                   <>
-                    <Button
-                      variant="success"
-                      size="sm"
-                      onClick={() => handleSave(s._id)}
-                    >
+                    <Button size="sm" onClick={() => handleSave(s._id)}>
                       Save
                     </Button>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={handleCancel}
-                    >
+                    <Button size="sm" variant="secondary" onClick={handleCancel}>
                       Cancel
                     </Button>
                   </>
                 ) : (
                   <>
-                    <Button
-                      variant="warning"
-                      size="sm"
-                      onClick={() => handleEdit(s)}
-                    >
+                    <Button size="sm" onClick={() => handleEdit(s)}>
                       Edit
                     </Button>
                     <Button
-                      variant="danger"
                       size="sm"
+                      variant="danger"
                       onClick={() => handleDelete(s._id)}
                     >
                       Delete
@@ -252,20 +289,9 @@ const ViewStudents = () => {
                   />
                 </td>
               ))}
-              <td className="d-flex gap-2">
-                <Button
-                  variant="success"
-                  size="sm"
-                  onClick={handleSaveNew}
-                >
+              <td>
+                <Button size="sm" onClick={handleSaveNew}>
                   Save
-                </Button>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={handleCancelNew}
-                >
-                  Cancel
                 </Button>
               </td>
             </tr>

@@ -1,3 +1,4 @@
+
 const mongoose = require("mongoose");
 
 const studentBulkSchema = new mongoose.Schema(
@@ -26,8 +27,9 @@ const studentBulkSchema = new mongoose.Schema(
     gender: { type: String, enum: ["MALE", "FEMALE"], default: "MALE" },
     admissionNumber: { type: String, unique: true, sparse: true },
     admissionDate: { type: Date, default: null },
-   
     dateOfBirth: { type: Date, default: null },
+
+    // EXISTING FEES (unchanged)
     TutionFee: { type: Number, default: 0 },
     admissionFee: { type: Number, default: 0 },
     busFee: { type: Number, default: 0 },
@@ -35,7 +37,9 @@ const studentBulkSchema = new mongoose.Schema(
   {
     timestamps: true,
     versionKey: false,
-    collection: "studentbulkks", 
+    collection: "studentbulkks",
+
+    strict: false, // ⭐⭐ THIS IS THE FIX ⭐⭐
   }
 );
 

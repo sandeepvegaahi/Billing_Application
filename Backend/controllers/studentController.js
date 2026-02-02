@@ -1,4 +1,5 @@
 const Student = require("../Models/StudentBulk");
+const FeeStructure = require("../Models/FeeStructure");
 
 const sendError = (res, error, status = 500) => {
   return res.status(status).json({
@@ -6,7 +7,6 @@ const sendError = (res, error, status = 500) => {
     message: error.message || error,
   });
 };
-
 
 exports.createStudent = async (req, res) => {
   try {
@@ -22,19 +22,49 @@ exports.createStudent = async (req, res) => {
   }
 };
 
-
 exports.getStudents = async (req, res) => {
   try {
+    // Fetch all students
     const students = await Student.find();
+
+    // Fetch fees except TutionFee and BusFee
+    const fees = await FeeStructure.find({
+      category: { $nin: ["TutionFee", "TuitionFee", "BusFee"] },
+    });
+
+    // Map fees for easy lookup
+    const feeMap = {};
+    fees.forEach((f) => {
+      if (f.category === "CUSTOM") {
+        feeMap[f.customCategoryName.replace(/\s+/g, "")] = f.amount;
+      } else {
+        feeMap[f.category] = f.amount;
+      }
+    });
+
+    // Add fee amounts to each student object
+    const studentsWithFees = students.map((student) => {
+      const studentObj = student.toObject();
+
+      Object.keys(feeMap).forEach((feeKey) => {
+        if (studentObj[feeKey] === undefined) {
+          studentObj[feeKey] = feeMap[feeKey];
+        }
+      });
+
+      return studentObj;
+    });
+
     return res.status(200).json({
       success: true,
       count: students.length,
-      data: students,
+      data: studentsWithFees,
     });
   } catch (error) {
     return sendError(res, error);
   }
 };
+
 
 exports.getStudentById = async (req, res) => {
   try {
@@ -46,7 +76,6 @@ exports.getStudentById = async (req, res) => {
     return sendError(res, error);
   }
 };
-
 
 exports.updateStudent = async (req, res) => {
   try {
@@ -66,7 +95,6 @@ exports.updateStudent = async (req, res) => {
   }
 };
 
-
 exports.deleteStudent = async (req, res) => {
   try {
     const student = await Student.findByIdAndDelete(req.params.id);
@@ -80,7 +108,6 @@ exports.deleteStudent = async (req, res) => {
     return sendError(res, error);
   }
 };
-
 
 exports.getStudentByRoll = async (req, res) => {
   try {
@@ -97,7 +124,6 @@ exports.getStudentByRoll = async (req, res) => {
     return sendError(res, error);
   }
 };
-
 
 exports.getBulkStudentCount = async (req, res) => {
   try {

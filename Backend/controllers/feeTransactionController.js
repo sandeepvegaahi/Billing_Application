@@ -23,7 +23,6 @@ function calculateCurrentYear(admissionDate) {
   return year;
 }
 
-
 exports.getStudentFees = async (req, res) => {
   try {
     const { htNumber } = req.params;
@@ -42,9 +41,11 @@ exports.getStudentFees = async (req, res) => {
 
     const paymentMap = {};
     feePayments.forEach((p) => {
-      if (p.feeCategory === "CUSTOM")
+      if (p.feeCategory === "CUSTOM" && p.customFeeName) {
         paymentMap[`CUSTOM_${p.customFeeName}`] = p.amount;
-      else paymentMap[p.feeCategory] = p.amount;
+      } else {
+        paymentMap[p.feeCategory] = p.amount;
+      }
     });
 
     let fees = structures
@@ -54,10 +55,11 @@ exports.getStudentFees = async (req, res) => {
         if (category === "TuitionFee" || category === "BusFee") return null;
 
         let amount = f.amount || 0;
-        if (f.category === "CUSTOM")
+        if (f.category === "CUSTOM") {
           amount = paymentMap[`CUSTOM_${f.customCategoryName}`] ?? amount;
-        else if (f.category === "CondonationFee")
-          amount = paymentMap[f.category] ?? amount;
+        } else if (f.category === "CondonationFee") {
+          amount = paymentMap["CondonationFee"] ?? amount;
+        }
 
         return {
           category,
@@ -79,7 +81,6 @@ exports.getStudentFees = async (req, res) => {
       feeType: "BusFee",
     });
 
-    
     const payments = await FeeTransaction.find({ htNumber: student.htNumber });
     fees = fees.map((f) => {
       const paid = payments
@@ -109,8 +110,6 @@ exports.getStudentFees = async (req, res) => {
   }
 };
 
-
-
 exports.payFee = async (req, res) => {
   try {
     const { htNumber, category, amount, customFeeName } = req.body;
@@ -133,29 +132,72 @@ exports.payFee = async (req, res) => {
 
     const currentYear = calculateCurrentYear(student.admissionDate);
 
-    
     let totalAmount = 0;
 
     if (category === "TuitionFee") {
       totalAmount = student.TutionFee || 0;
-      console.log("TUITION TOTAL:", totalAmount);
     } else if (category === "BusFee") {
       totalAmount = student.busFee || 0;
-      console.log("BUS TOTAL:", totalAmount);
     } else if (category === "CondonationFee") {
+      // Fetch assigned fee for student
       const feeRecord = await FeePayment.findOne({
         htNumber: student.htNumber,
         feeCategory: "CondonationFee",
       });
 
+      // Aggregate already paid amount
+      const paidAgg = await FeeTransaction.aggregate([
+        {
+          $match: {
+            htNumber: student.htNumber,
+            category: "CondonationFee",
+          },
+        },
+        { $group: { _id: null, total: { $sum: "$amountPaid" } } },
+      ]);
+
+      const alreadyPaid = paidAgg[0]?.total || 0;
+
+      // Handle case when fee is not assigned but some payment exists
       if (!feeRecord) {
+        if (alreadyPaid > 0) {
+          return res.status(400).json({
+            success: false,
+            message: `Condonation fee not assigned, but student already paid ₹${alreadyPaid}`,
+          });
+        } else {
+          return res.status(400).json({
+            success: false,
+            message: "Condonation fee not assigned to this student",
+          });
+        }
+      }
+
+      const totalAmount = feeRecord.amount ?? 0;
+      const due = Math.max(totalAmount - alreadyPaid, 0);
+
+      if (amount > due) {
         return res.status(400).json({
           success: false,
-          message: "Condonation fee not assigned to this student",
+          message: `Payment exceeds due amount. Due is ₹${due}`,
         });
       }
 
-      totalAmount = feeRecord.amount;
+      // Save the payment
+      await FeeTransaction.create({
+        htNumber: student.htNumber,
+        studentName: student.studentName,
+        branch: student.branch,
+        year: currentYear,
+        category: "CondonationFee",
+        amountPaid: Number(amount),
+        paymentMode: "CASH",
+      });
+
+      return res.json({
+        success: true,
+        message: `₹${amount} paid successfully for CondonationFee`,
+      });
     } else if (category === "CUSTOM") {
       if (!customFeeName) {
         return res.status(400).json({
@@ -164,28 +206,59 @@ exports.payFee = async (req, res) => {
         });
       }
 
+      const normalizedCustomFeeName = customFeeName.trim();
+
       const feeRecord = await FeePayment.findOne({
         htNumber: student.htNumber,
         feeCategory: "CUSTOM",
-        customFeeName,
-        academicYear: currentYear,
+        customFeeName: normalizedCustomFeeName,
       });
-
       if (!feeRecord) {
+        // No fee assigned yet, but check if student already paid
+        const paidAgg = await FeeTransaction.aggregate([
+          {
+            $match: {
+              htNumber: student.htNumber,
+              category: "CondonationFee",
+            },
+          },
+          { $group: { _id: null, total: { $sum: "$amountPaid" } } },
+        ]);
+
+        const alreadyPaid = paidAgg[0]?.total || 0;
+
+        if (alreadyPaid > 0) {
+          return res.status(400).json({
+            success: false,
+            message: `Condonation fee not assigned, but student already paid ₹${alreadyPaid}`,
+          });
+        }
+
         return res.status(400).json({
           success: false,
-          message: `Custom fee ${customFeeName} not found`,
+          message: "Condonation fee not assigned to this student",
         });
       }
 
-      totalAmount = feeRecord.amount;
+      totalAmount = feeRecord.amount ?? 0;
+
+      // Ensure totalAmount is at least alreadyPaid
+      const paidAgg = await FeeTransaction.aggregate([
+        {
+          $match: {
+            htNumber: student.htNumber,
+            category: "CondonationFee",
+          },
+        },
+        { $group: { _id: null, total: { $sum: "$amountPaid" } } },
+      ]);
+
+      const alreadyPaid = paidAgg[0]?.total || 0;
+      const due = Math.max(totalAmount - alreadyPaid, 0);
     } else {
       const fee = await FeeStructure.findOne({
         $or: [{ category }, { customCategoryName: category }],
       });
-      console.log("STUDENT FOUND:", student.htNumber);
-      console.log("CATEGORY RECEIVED:", category);
-      console.log("CUSTOM FEE NAME:", customFeeName);
 
       if (!fee) {
         return res.status(400).json({
@@ -196,13 +269,13 @@ exports.payFee = async (req, res) => {
 
       totalAmount = fee.amount;
     }
-    
+
     const paidAgg = await FeeTransaction.aggregate([
       {
         $match: {
           htNumber: student.htNumber,
           category,
-          ...(category === "CUSTOM" && customFeeName ? { customFeeName } : {}),
+          ...(category === "CUSTOM" ? { customFeeName } : {}),
         },
       },
       { $group: { _id: null, total: { $sum: "$amountPaid" } } },
@@ -218,7 +291,6 @@ exports.payFee = async (req, res) => {
       });
     }
 
-   
     await FeeTransaction.create({
       htNumber: student.htNumber,
       studentName: student.studentName,
@@ -232,7 +304,9 @@ exports.payFee = async (req, res) => {
 
     return res.json({
       success: true,
-      message: `₹${amount} paid successfully for ${category}${customFeeName ? ` (${customFeeName})` : ""}`,
+      message: `₹${amount} paid successfully for ${category}${
+        customFeeName ? ` (${customFeeName})` : ""
+      }`,
     });
   } catch (err) {
     console.error("PAYMENT ERROR:", err);

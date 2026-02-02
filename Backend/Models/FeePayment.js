@@ -1,5 +1,3 @@
-
-
 const mongoose = require("mongoose");
 
 const feePaymentSchema = new mongoose.Schema(
@@ -24,7 +22,7 @@ const feePaymentSchema = new mongoose.Schema(
     },
 
     academicYear: {
-      type: Number,
+      type: String, // <--- change to String
       required: true,
     },
 
@@ -63,7 +61,7 @@ const feePaymentSchema = new mongoose.Schema(
       default: Date.now,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 module.exports = mongoose.model("FeePayment", feePaymentSchema);
