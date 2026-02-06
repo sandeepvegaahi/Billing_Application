@@ -32,12 +32,21 @@ const normalizeAcademicYear = (value) => {
 
 const excelDateToJSDate = (value) => {
   if (!value) return null;
+
   if (value instanceof Date) return value;
-  if (typeof value === "number") return new Date((value - 25569) * 86400 * 1000);
-  const parsed = new Date(value);
+
+  if (typeof value === "number") {
+    const utcDays = Math.floor(value - 25569);
+    return new Date(utcDays * 86400 * 1000);
+  }
+
+  // force yyyy-mm-dd
+  const parsed = new Date(String(value).trim());
   return isNaN(parsed) ? null : parsed;
 };
 
+
+const AcademicBatch = require("../Models/AcademicBatch");
 
 exports.bulkUploadStudents = async (req, res) => {
   try {
@@ -45,10 +54,33 @@ exports.bulkUploadStudents = async (req, res) => {
 
     
     const selectedAcademicYear = req.body.academicYear;
+const { academicBatchId } = req.body;
 
-    const workbook = XLSX.readFile(req.file.path);
+let selectedBatch = null;
+let batchStartYear = null;
+
+if (academicBatchId) {
+  selectedBatch = await AcademicBatch.findById(academicBatchId).lean();
+  if (!selectedBatch) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid Academic Batch selected",
+    });
+  }
+  batchStartYear = selectedBatch.startYear; // 🔑 2018 from 2018-2022
+}
+
+    const workbook = XLSX.readFile(req.file.path, {
+  cellDates: true,
+});
+
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
-    const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+  
+  const rows = XLSX.utils.sheet_to_json(sheet, {
+  defval: "",
+  raw: false,   // 👈 THIS IS CRITICAL
+});
+
 
     let inserted = 0;
     let updated = 0;
@@ -56,8 +88,37 @@ exports.bulkUploadStudents = async (req, res) => {
 
     for (let i = 0; i < rows.length; i++) {
       try {
+        
         const row = normalizeRow(rows[i]);
         if (!row.htnumber) throw new Error("HT Number missing");
+const admissionDateRaw = row.admissiondate;
+
+let admissionYear = null;
+
+// Case 1: Excel date number
+if (typeof admissionDateRaw === "number") {
+  const date = excelDateToJSDate(admissionDateRaw);
+  admissionYear = date?.getFullYear();
+}
+
+// Case 2: String like "2017" or "2017-06-01"
+else if (typeof admissionDateRaw === "string") {
+  const yearMatch = admissionDateRaw.match(/\d{4}/);
+  admissionYear = yearMatch ? Number(yearMatch[0]) : null;
+}
+
+// Case 3: JS Date
+else if (admissionDateRaw instanceof Date) {
+  admissionYear = admissionDateRaw.getFullYear();
+}
+if (batchStartYear && admissionYear) {
+  if (admissionYear !== batchStartYear) {
+    throw new Error(
+      `Admission year ${admissionYear} must match batch start year ${batchStartYear}`
+    );
+  }
+}
+
 
         const htNumber = String(row.htnumber).trim().toUpperCase();
         const existingStudent = await Student.findOne({ htNumber });

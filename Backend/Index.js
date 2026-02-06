@@ -23,7 +23,7 @@ app.get("/", (req, res) => {
 
 app.use("/api/admin", require("./Routes/adminRoutes"));
 
-
+app.use("/api",require("./Routes/courseRoutes"));
 app.use("/api/students", require("./Routes/studentRoutes"));
 
 

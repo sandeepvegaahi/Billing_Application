@@ -5,6 +5,7 @@ import { Button, Form, Card, ProgressBar } from "react-bootstrap";
 import api from "../../api/api";
 import Swal from "sweetalert2";
 import { notifyDashboardUpdate } from "../../utils/dashboardEvents";
+import { downloadErrorPdf } from "../../utils/errorPdf";
 
 const DashboardUpload = () => {
   const [file, setFile] = useState(null);
@@ -17,6 +18,10 @@ const DashboardUpload = () => {
   // Academic Year
   const [academicYear, setAcademicYear] = useState("");
   const [academicYears, setAcademicYears] = useState([]);
+const [courses, setCourses] = useState([]);
+const [courseId, setCourseId] = useState("");
+const [batches, setBatches] = useState([]);
+const [batchId, setBatchId] = useState("");
 
   const token = localStorage.getItem("adminToken");
   const fileInputRef = useRef(null);
@@ -56,6 +61,29 @@ const DashboardUpload = () => {
     };
     fetchAcademicYears();
   }, [token]);
+  useEffect(() => {
+  if (uploadType !== "STUDENT") return;
+
+  api.get("/courses")
+    .then(res => {
+      setCourses(res.data.data || []);
+    })
+    .catch(() => {
+      Swal.fire("Error", "Failed to fetch courses", "error");
+    });
+}, [uploadType]);
+
+useEffect(() => {
+  if (!courseId) {
+    setBatches([]);
+    setBatchId("");
+    return;
+  }
+
+  api.get(`/courses/${courseId}/batches`)
+    .then(res => setBatches(res.data.data || []))
+    .catch(() => Swal.fire("Error", "Failed to fetch batches", "error"));
+}, [courseId]);
 
   const handleFileChange = (e) => setFile(e.target.files[0]);
 
@@ -109,6 +137,7 @@ const DashboardUpload = () => {
     if (!file)
       return Swal.fire("Error", "Please select an Excel file", "error");
 
+
     if ((uploadType === "FEE" || uploadType === "PAID") && !feeCategory)
       return Swal.fire("Error", "Please select Fee Category", "error");
 
@@ -118,6 +147,14 @@ const DashboardUpload = () => {
 
     const formData = new FormData();
     formData.append("file", file);
+if (uploadType === "STUDENT") {
+    if (!courseId || !batchId) {
+      return Swal.fire("Error", "Course and Batch required", "error");
+    }
+    
+    formData.append("courseId", courseId);
+    formData.append("academicBatchId", batchId);
+  }
 
     // Send academic year as starting year number
     if (academicYear) {
@@ -162,11 +199,31 @@ const DashboardUpload = () => {
       }
 
       Swal.fire({
-        icon: "success",
-        title: "Upload Completed",
-        html: message || "No records were updated",
-        width: 600,
-      });
+  icon: "success",
+  title: "Upload Completed",
+  showCloseButton: true,
+  html: `
+    <p><b>${inserted}</b> student(s) added successfully</p>
+    <p><b>${failed}</b> row(s) failed</p>
+    ${
+      failed > 0
+        ? `<button id="download-errors" class="swal2-confirm swal2-styled" style="background:#dc3545;">
+             Download Error Report (PDF)
+           </button>`
+        : ""
+    }
+  `,
+  showConfirmButton: false,
+  didOpen: () => {
+    if (failed > 0) {
+      document
+        .getElementById("download-errors")
+        .addEventListener("click", () => {
+          downloadErrorPdf(failedRows);
+        });
+    }
+  },
+});
 
       setFile(null);
       setFeeCategory("");
@@ -240,6 +297,29 @@ const DashboardUpload = () => {
           </Form.Group>
         </>
       )}
+{uploadType === "STUDENT" && (
+  <>
+    <Form.Group className="mb-3">
+      <Form.Label>Course</Form.Label>
+      <Form.Select value={courseId} onChange={(e) => setCourseId(e.target.value)}>
+        <option value="">Select Course</option>
+        {courses.map(c => (
+          <option key={c._id} value={c._id}>{c.name}</option>
+        ))}
+      </Form.Select>
+    </Form.Group>
+
+    <Form.Group className="mb-3">
+      <Form.Label>Academic Batch</Form.Label>
+      <Form.Select value={batchId} onChange={(e) => setBatchId(e.target.value)}>
+        <option value="">Select Batch</option>
+        {batches.map(b => (
+          <option key={b._id} value={b._id}>{b.label}</option>
+        ))}
+      </Form.Select>
+    </Form.Group>
+  </>
+)}
 
       <Form.Group className="mb-2">
         <Form.Label>Select Excel File</Form.Label>

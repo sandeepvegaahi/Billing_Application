@@ -13,6 +13,11 @@ const normalizeRow = (row) => {
   });
   return normalized;
 };
+  const getYear = (date) => {
+  if (!date) return null;
+  const d = new Date(date);
+  return isNaN(d) ? null : d.getFullYear();
+};
 
 const extractNumber = (value) => {
   if (value === undefined || value === null || value === "") return undefined;
@@ -74,19 +79,38 @@ exports.bulkUploadFeePayments = async (req, res) => {
         const htNumber = String(row.htnumber).trim().toUpperCase();
         const studentNameExcel = normalizeName(row.studentname);
         const amount = extractNumber(row.amount);
-        const academicYear = normalizeAcademicYear(row.academicyear);
+        
 
         if (!studentNameExcel) throw new Error("Student name missing");
         if (amount === undefined || amount <= 0)
           throw new Error("Invalid or missing amount");
-        if (!academicYear) throw new Error("Academic year invalid");
+        
 
         const student = await Student.findOne({ htNumber });
         if (!student) throw new Error("HT Number not found");
-
+        
         const studentNameDB = normalizeName(student.studentName);
         if (studentNameDB !== studentNameExcel)
           throw new Error("HT Number or Name mismatch");
+const selectedYear = Number(req.body.academicYear); // 2018
+
+const admissionYear = getYear(student.admissionDate);
+const graduationYear = student.graduationYear; // assuming number like 2022
+
+if (!admissionYear || !graduationYear) {
+  throw new Error("Student admission or graduation year missing");
+}
+
+if (
+  selectedYear < admissionYear ||
+  selectedYear > graduationYear
+) {
+  throw new Error(
+    `Selected year ${selectedYear} not in student academic range ${admissionYear}-${graduationYear}`
+  );
+}
+const academicYear = `${selectedYear}-${selectedYear + 1}`;
+
 
         // Predefined Fees
         if (["BusFee", "TuitionFee"].includes(feeCategory)) {
