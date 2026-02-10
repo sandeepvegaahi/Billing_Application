@@ -1,0 +1,27 @@
+.view-students-wrapper {
+  width: 100%;
+}
+
+.table-scroll-container {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.table-scroll-container table {
+  min-width: 1600px; /* increase if more columns */
+}
+
+table {
+  white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  .view-filters {
+    flex-direction: column !important;
+    gap: 10px;
+  }
+
+  .view-actions {
+    flex-direction: column !important;
+  }
+}

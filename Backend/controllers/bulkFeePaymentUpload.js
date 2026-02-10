@@ -1,8 +1,10 @@
+
 const XLSX = require("xlsx");
 const fs = require("fs");
 const Student = require("../Models/StudentBulk");
 const FeePayment = require("../Models/FeePayment");
 const FeeTransaction = require("../Models/FeeTransaction");
+const AcademicBatch = require("../Models/AcademicBatch"); // ✅ NEW
 
 /* ---------- Helpers ---------- */
 const normalizeRow = (row) => {
@@ -13,7 +15,8 @@ const normalizeRow = (row) => {
   });
   return normalized;
 };
-  const getYear = (date) => {
+
+const getYear = (date) => {
   if (!date) return null;
   const d = new Date(date);
   return isNaN(d) ? null : d.getFullYear();
@@ -23,16 +26,6 @@ const extractNumber = (value) => {
   if (value === undefined || value === null || value === "") return undefined;
   const num = String(value).replace(/[^0-9]/g, "");
   return num ? Number(num) : undefined;
-};
-
-const normalizeAcademicYear = (value) => {
-  if (!value) return undefined;
-  const v = String(value).toLowerCase();
-  if (v.includes("1")) return "1st Year";
-  if (v.includes("2")) return "2nd Year";
-  if (v.includes("3")) return "3rd Year";
-  if (v.includes("4")) return "4th Year";
-  return undefined;
 };
 
 const normalizeName = (name) =>
@@ -47,10 +40,47 @@ exports.bulkUploadFeePayments = async (req, res) => {
     if (!req.file)
       return res.status(400).json({ message: "Excel file required" });
 
-    const { feeCategory } = req.body;
+    const { feeCategory, academicYear, academicBatchId } = req.body;
+
     if (!feeCategory)
       return res.status(400).json({ message: "Fee category required" });
 
+    // ✅ Academic Batch Validation (NEW)
+    if (!academicBatchId) {
+      return res.status(400).json({
+        success: false,
+        message: "Academic Batch is required for fee upload",
+      });
+    }
+
+    const selectedBatch = await AcademicBatch.findById(academicBatchId).lean();
+
+    if (!selectedBatch) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid Academic Batch selected",
+      });
+    }
+
+    const batchStartYear = selectedBatch.startYear;
+    const batchEndYear = selectedBatch.endYear;
+
+    const selectedYear = Number(academicYear);
+
+    if (
+      !selectedYear ||
+      selectedYear < batchStartYear ||
+      selectedYear >= batchEndYear
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: `Academic Year must be between ${batchStartYear}-${batchEndYear}`,
+      });
+    }
+
+    const finalAcademicYear = `${selectedYear}-${selectedYear + 1}`;
+
+    // ⬇️ Your existing logic continues
     const workbook = XLSX.readFile(req.file.path);
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
     const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
@@ -79,38 +109,20 @@ exports.bulkUploadFeePayments = async (req, res) => {
         const htNumber = String(row.htnumber).trim().toUpperCase();
         const studentNameExcel = normalizeName(row.studentname);
         const amount = extractNumber(row.amount);
-        
 
         if (!studentNameExcel) throw new Error("Student name missing");
         if (amount === undefined || amount <= 0)
           throw new Error("Invalid or missing amount");
-        
 
         const student = await Student.findOne({ htNumber });
         if (!student) throw new Error("HT Number not found");
-        
+
         const studentNameDB = normalizeName(student.studentName);
         if (studentNameDB !== studentNameExcel)
           throw new Error("HT Number or Name mismatch");
-const selectedYear = Number(req.body.academicYear); // 2018
 
-const admissionYear = getYear(student.admissionDate);
-const graduationYear = student.graduationYear; // assuming number like 2022
-
-if (!admissionYear || !graduationYear) {
-  throw new Error("Student admission or graduation year missing");
-}
-
-if (
-  selectedYear < admissionYear ||
-  selectedYear > graduationYear
-) {
-  throw new Error(
-    `Selected year ${selectedYear} not in student academic range ${admissionYear}-${graduationYear}`
-  );
-}
-const academicYear = `${selectedYear}-${selectedYear + 1}`;
-
+        // ✅ Use academic year from batch logic
+        const academicYear = finalAcademicYear;
 
         // Predefined Fees
         if (["BusFee", "TuitionFee"].includes(feeCategory)) {
@@ -129,14 +141,14 @@ const academicYear = `${selectedYear}-${selectedYear + 1}`;
                 paymentMode: "EXCEL",
               },
             },
-            { upsert: true },
+            { upsert: true }
           );
 
           updated++;
           continue;
         }
 
-        // Custom / Condonation / Other Fees
+        // Custom / Other Fees
         const exists = await FeePayment.findOne({
           htNumber,
           academicYear,
@@ -157,20 +169,19 @@ const academicYear = `${selectedYear}-${selectedYear + 1}`;
               feeCategory: feeCategoryDB,
               customFeeName,
             },
-            { $set: { amount, paymentMode: "EXCEL" } },
+            { $set: { amount, paymentMode: "EXCEL" } }
           );
 
           if (fieldName)
             await Student.updateOne(
               { htNumber },
-              { $set: { [fieldName]: amount } },
+              { $set: { [fieldName]: amount } }
             );
 
           updated++;
           continue;
         }
 
-        // Insert new
         await FeePayment.create({
           student: student._id,
           studentName: student.studentName,
@@ -185,7 +196,7 @@ const academicYear = `${selectedYear}-${selectedYear + 1}`;
         if (fieldName)
           await Student.updateOne(
             { htNumber },
-            { $set: { [fieldName]: amount } },
+            { $set: { [fieldName]: amount } }
           );
 
         inserted++;
@@ -208,5 +219,3 @@ const academicYear = `${selectedYear}-${selectedYear + 1}`;
     res.status(500).json({ success: false, message: err.message });
   }
 };
-
-

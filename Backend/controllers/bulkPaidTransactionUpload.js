@@ -1,126 +1,137 @@
 const XLSX = require("xlsx");
 const fs = require("fs");
-
 const Student = require("../Models/StudentBulk");
 const FeeStructure = require("../Models/FeeStructure");
 const FeePayment = require("../Models/FeePayment");
 const FeeTransaction = require("../Models/FeeTransaction");
 
-/* ---------- Helpers (reuse-safe) ---------- */
-const normalizeRow = (row) => {
-  const normalized = {};
-  Object.keys(row).forEach((key) => {
-    const cleanKey = key.replace(/\s+/g, "").toLowerCase();
-    normalized[cleanKey] = row[key];
-  });
-  return normalized;
-};
+/* ---------- Helpers ---------- */
+const normalize = (val) =>
+  String(val || "")
+    .trim()
+    .replace(/\s+/g, "")
+    .toUpperCase();
 
-const extractNumber = (value) => {
-  if (value === undefined || value === null || value === "") return undefined;
-  const num = String(value).replace(/[^0-9]/g, "");
-  return num ? Number(num) : undefined;
-};
+function calculateCurrentYear(admissionDate) {
+  const admission = new Date(admissionDate);
+  const now = new Date();
 
-const normalizeAcademicYear = (value) => {
-  if (!value) return undefined;
-  const v = String(value).toLowerCase();
-  if (v.includes("1")) return 1;
-  if (v.includes("2")) return 2;
-  if (v.includes("3")) return 3;
-  if (v.includes("4")) return 4;
-  return undefined;
-};
+  let year = now.getFullYear() - admission.getFullYear();
+  if (
+    now.getMonth() < admission.getMonth() ||
+    (now.getMonth() === admission.getMonth() &&
+      now.getDate() < admission.getDate())
+  ) {
+    year -= 1;
+  }
 
-const normalizeName = (name) =>
-  String(name || "").trim().replace(/\s+/g, " ").toLowerCase();
+  year = year + 1;
+  if (year > 4) year = 4;
+  if (year < 1) year = 1;
 
-/* ---------- Controller ---------- */
+  return year;
+}
+
+/* ---------- BULK PAID TRANSACTION UPLOAD ---------- */
 exports.bulkUploadPaidTransactions = async (req, res) => {
   try {
-    if (!req.file)
-      return res.status(400).json({ success: false, message: "Excel file required" });
+    console.log("🚀 BULK PAID UPLOAD HIT");
 
-    const { feeCategory } = req.body;
-    if (!feeCategory)
-      return res.status(400).json({ success: false, message: "Fee category required" });
+    if (!req.file) {
+      return res
+        .status(400)
+        .json({ success: false, message: "No file uploaded" });
+    }
+
+    const { feeCategory } = req.body; // ✅ coming from UI dropdown
+
+    if (!feeCategory) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Fee category is required" });
+    }
 
     const workbook = XLSX.readFile(req.file.path);
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
-    const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+    const rows = XLSX.utils.sheet_to_json(sheet);
 
     let inserted = 0;
+    let failed = 0;
     const failedRows = [];
-
-    const predefinedFees = [
-      "TuitionFee",
-      "BusFee",
-      "ExamFee",
-      "UniversityFee",
-      "CondonationFee",
-    ];
-
-    let feeCategoryDB = feeCategory;
-    let customFeeName = null;
-
-    if (!predefinedFees.includes(feeCategory)) {
-      feeCategoryDB = "CUSTOM";
-      customFeeName = feeCategory;
-    }
 
     for (let i = 0; i < rows.length; i++) {
       try {
-        const row = normalizeRow(rows[i]);
+        const row = rows[i];
 
-        if (!row.htnumber) throw new Error("HT Number missing");
+        const htNumber = normalize(
+          row.htNumber || row.HTNumber || row["HT Number"],
+        );
+        const studentNameExcel = String(
+          row.studentName || row.StudentName || "",
+        )
+          .trim()
+          .toLowerCase();
+        const amount = Number(row.amount || row.Amount || 0);
 
-        const htNumber = String(row.htnumber).trim().toUpperCase();
-        const studentNameExcel = normalizeName(row.studentname);
-        const amount = extractNumber(row.amount);
-        const academicYear = normalizeAcademicYear(row.academicyear);
-
-        if (!studentNameExcel) throw new Error("Student name missing");
-        if (amount === undefined || amount <= 0) throw new Error("Invalid amount");
-        if (!academicYear) throw new Error("Academic year invalid");
+        if (!htNumber || !amount || amount <= 0) {
+          throw new Error("Missing htNumber / amount");
+        }
 
         const student = await Student.findOne({ htNumber });
-        if (!student) throw new Error("HT Number not found");
+        if (!student) throw new Error("Student not found");
 
-        const studentNameDB = normalizeName(student.studentName);
-        if (studentNameDB !== studentNameExcel)
+        const studentNameDB = String(student.studentName || "")
+          .trim()
+          .toLowerCase();
+
+        if (studentNameExcel && studentNameExcel !== studentNameDB) {
           throw new Error("HT Number / Name mismatch");
+        }
 
-        /* ---------- Determine TOTAL FEE ---------- */
+        const year = calculateCurrentYear(student.admissionDate);
+
         let totalAmount = 0;
 
         if (feeCategory === "TuitionFee") {
           totalAmount = student.TutionFee || 0;
         } else if (feeCategory === "BusFee") {
           totalAmount = student.busFee || 0;
-        } else if (feeCategoryDB === "CUSTOM") {
+        } else if (feeCategory === "CondonationFee") {
           const feeRecord = await FeePayment.findOne({
             htNumber,
-            academicYear,
-            feeCategory: "CUSTOM",
-            customFeeName,
+            feeCategory: "CondonationFee",
           });
-          if (!feeRecord) throw new Error("Custom fee not assigned");
-          totalAmount = feeRecord.amount;
+          if (!feeRecord) throw new Error("Condonation fee not assigned");
+          totalAmount = feeRecord.amount || 0;
+        } else if (feeCategory === "CUSTOM") {
+          const feeRecord = await FeePayment.findOne({
+            htNumber,
+            feeCategory: "CUSTOM",
+            academicBatchId: req.body.academicBatchId, // batch match
+            academicYear: req.body.academicYear, // must match DB format exactly
+          });
+
+          if (!feeRecord)
+            throw new Error("Custom fee not assigned for this student");
+
+          totalAmount = feeRecord.amount || 0;
         } else {
           const fee = await FeeStructure.findOne({
-            $or: [{ category: feeCategory }, { customCategoryName: feeCategory }],
+            $or: [
+              { category: feeCategory },
+              { customCategoryName: feeCategory },
+            ],
           });
           if (!fee) throw new Error("Fee category not found");
-          totalAmount = fee.amount;
+          totalAmount = fee.amount || 0;
         }
 
-        /* ---------- Calculate Already Paid ---------- */
         const paidAgg = await FeeTransaction.aggregate([
           {
             $match: {
               htNumber,
-              category: feeCategoryDB === "CUSTOM" ? "CUSTOM" : feeCategory,
-              ...(feeCategoryDB === "CUSTOM" ? { customFeeName } : {}),
+              category: feeCategory,
+              year,
             },
           },
           { $group: { _id: null, total: { $sum: "$amountPaid" } } },
@@ -129,24 +140,25 @@ exports.bulkUploadPaidTransactions = async (req, res) => {
         const alreadyPaid = paidAgg[0]?.total || 0;
         const due = totalAmount - alreadyPaid;
 
-        if (amount > due)
-          throw new Error(`Payment exceeds due (₹${due})`);
+        if (amount > due) {
+          throw new Error(`Amount exceeds due ₹${due}`);
+        }
 
-        /* ---------- Create TRANSACTION ---------- */
         await FeeTransaction.create({
           htNumber,
           studentName: student.studentName,
           branch: student.branch,
-          year: academicYear,
-          category: feeCategoryDB === "CUSTOM" ? "CUSTOM" : feeCategory,
+          year,
+          category: feeCategory,
           amountPaid: amount,
           paymentMode: "OFFLINE_EXCEL",
-          ...(feeCategoryDB === "CUSTOM" ? { customFeeName } : {}),
         });
 
         inserted++;
       } catch (err) {
+        failed++;
         failedRows.push({ row: i + 2, error: err.message });
+        console.error("❌ ROW FAILED:", i + 2, err.message);
       }
     }
 
@@ -155,12 +167,211 @@ exports.bulkUploadPaidTransactions = async (req, res) => {
     return res.json({
       success: true,
       inserted,
-      failed: failedRows.length,
+      failed,
       failedRows,
-      message: "Offline payments uploaded successfully",
+      message: "Bulk paid transactions uploaded successfully",
     });
   } catch (err) {
-    console.error("PAID BULK UPLOAD ERROR:", err);
-    res.status(500).json({ success: false, message: err.message });
+    console.error("❌ BULK UPLOAD ERROR:", err);
+    return res.status(500).json({ success: false, message: err.message });
   }
 };
+
+
+// const XLSX = require("xlsx");
+// const fs = require("fs");
+// const mongoose = require("mongoose");
+// const Student = require("../Models/StudentBulk");
+// const FeeStructure = require("../Models/FeeStructure");
+// const FeePayment = require("../Models/FeePayment");
+// const FeeTransaction = require("../Models/FeeTransaction");
+
+// /* ---------- Helpers ---------- */
+// const normalize = (val) =>
+//   String(val || "")
+//     .trim()
+//     .replace(/\s+/g, "")
+//     .toUpperCase();
+
+// function calculateCurrentYear(admissionDate) {
+//   const admission = new Date(admissionDate);
+//   const now = new Date();
+
+//   let year = now.getFullYear() - admission.getFullYear();
+//   if (
+//     now.getMonth() < admission.getMonth() ||
+//     (now.getMonth() === admission.getMonth() &&
+//       now.getDate() < admission.getDate())
+//   ) {
+//     year -= 1;
+//   }
+
+//   year = year + 1;
+//   if (year > 4) year = 4;
+//   if (year < 1) year = 1;
+
+//   return year;
+// }
+
+// /* ---------- BULK PAID TRANSACTION UPLOAD ---------- */
+// exports.bulkUploadPaidTransactions = async (req, res) => {
+//   try {
+//     console.log("🚀 BULK PAID UPLOAD HIT");
+
+//     if (!req.file) {
+//       return res
+//         .status(400)
+//         .json({ success: false, message: "No file uploaded" });
+//     }
+
+//     const { feeCategory, academicYear, academicBatchId } = req.body;
+
+//     if (!feeCategory) {
+//       return res
+//         .status(400)
+//         .json({ success: false, message: "Fee category is required" });
+//     }
+
+//     const workbook = XLSX.readFile(req.file.path);
+//     const sheet = workbook.Sheets[workbook.SheetNames[0]];
+//     const rows = XLSX.utils.sheet_to_json(sheet);
+
+//     let inserted = 0;
+//     let failed = 0;
+//     const failedRows = [];
+
+//     for (let i = 0; i < rows.length; i++) {
+//       try {
+//         const row = rows[i];
+
+//         const htNumber = normalize(
+//           row.htNumber || row.HTNumber || row["HT Number"]
+//         );
+//         const studentNameExcel = String(
+//           row.studentName || row.StudentName || ""
+//         )
+//           .trim()
+//           .toLowerCase();
+//         const amount = Number(row.amount || row.Amount || 0);
+
+//         if (!htNumber || !amount || amount <= 0) {
+//           throw new Error("Missing htNumber / amount");
+//         }
+
+//         const student = await Student.findOne({ htNumber });
+//         if (!student) throw new Error("Student not found");
+
+//         const studentNameDB = String(student.studentName || "")
+//           .trim()
+//           .toLowerCase();
+
+//         if (studentNameExcel && studentNameExcel !== studentNameDB) {
+//           throw new Error("HT Number / Name mismatch");
+//         }
+
+//         const year = calculateCurrentYear(student.admissionDate);
+
+//         let totalAmount = 0;
+
+//         if (feeCategory === "TuitionFee") {
+//           totalAmount = student.TutionFee || 0;
+//         } 
+//         else if (feeCategory === "BusFee") {
+//           totalAmount = student.busFee || 0;
+//         } 
+//         else if (feeCategory === "CondonationFee") {
+//           const feeRecord = await FeePayment.findOne({
+//             htNumber,
+//             feeCategory: "CondonationFee",
+//           });
+//           if (!feeRecord) throw new Error("Condonation fee not assigned");
+//           totalAmount = feeRecord.amount || 0;
+//         } 
+//         else if (feeCategory === "CUSTOM") {
+//           let feeRecord = null;
+
+//           if (academicYear && academicBatchId) {
+//             feeRecord = await FeePayment.findOne({
+//               htNumber,
+//               academicYear,
+//               academicBatchId: new mongoose.Types.ObjectId(academicBatchId),
+//               $or: [{ feeCategory: "CUSTOM" }, { category: "CUSTOM" }],
+//             });
+//           }
+
+//           // fallback: try without batch/year (prevents ₹0 due bug)
+//           if (!feeRecord) {
+//             feeRecord = await FeePayment.findOne({
+//               htNumber,
+//               $or: [{ feeCategory: "CUSTOM" }, { category: "CUSTOM" }],
+//             });
+//           }
+
+//           if (feeRecord) {
+//             totalAmount = feeRecord.amount || 0;
+//           } else {
+//             // Allow Excel upload even if not found
+//             totalAmount = amount;
+//           }
+//         } 
+//         else {
+//           const fee = await FeeStructure.findOne({
+//             $or: [
+//               { category: feeCategory },
+//               { customCategoryName: feeCategory },
+//             ],
+//           });
+//           if (!fee) throw new Error("Fee category not found");
+//           totalAmount = fee.amount || 0;
+//         }
+
+//         const paidAgg = await FeeTransaction.aggregate([
+//           {
+//             $match: {
+//               htNumber,
+//               category: feeCategory,
+//               year,
+//             },
+//           },
+//           { $group: { _id: null, total: { $sum: "$amountPaid" } } },
+//         ]);
+
+//         const alreadyPaid = paidAgg[0]?.total || 0;
+//         const due = totalAmount - alreadyPaid;
+
+//         if (amount > due) {
+//           throw new Error(`Amount exceeds due ₹${due}`);
+//         }
+
+//         await FeeTransaction.create({
+//           htNumber,
+//           studentName: student.studentName,
+//           branch: student.branch,
+//           year,
+//           category: feeCategory,
+//           amountPaid: amount,
+//           paymentMode: "OFFLINE_EXCEL",
+//         });
+
+//         inserted++;
+//       } catch (err) {
+//         failed++;
+//         failedRows.push({ row: i + 2, error: err.message });
+//         console.error("❌ ROW FAILED:", i + 2, err.message);
+//       }
+//     }
+
+//     fs.unlinkSync(req.file.path);
+
+//     return res.json({
+//       success: true,
+//       inserted,
+//       failed,
+//       failedRows,
+//       message: "Bulk paid transactions uploaded successfully",
+//     });
+//   } catch (err) {
+//     console.error("❌ BULK UPLOAD ERROR:", err);
+//     return res.status(500).json({ success: false, message: err.message });
+//   }
+// };

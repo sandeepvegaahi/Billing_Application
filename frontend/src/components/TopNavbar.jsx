@@ -1,5 +1,3 @@
-
-
 import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { notifyAuthChange } from "../utils/authEvents";
@@ -9,7 +7,7 @@ const TopNavbar = () => {
   const navigate = useNavigate();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  const SESSION_LIMIT = 30 * 60 * 1000; 
+  const SESSION_LIMIT = 30 * 60 * 1000;
 
   const checkAuth = () => {
     const token = localStorage.getItem("adminToken");
@@ -18,7 +16,6 @@ const TopNavbar = () => {
     if (token && loginTime) {
       const now = new Date().getTime();
       if (now - loginTime > SESSION_LIMIT) {
-       
         localStorage.removeItem("adminToken");
         localStorage.removeItem("adminInfo");
         localStorage.removeItem("loginTime");
@@ -37,9 +34,8 @@ const TopNavbar = () => {
   };
 
   useEffect(() => {
-    checkAuth(); 
+    checkAuth();
 
-    
     window.addEventListener("authChange", checkAuth);
     return () => {
       window.removeEventListener("authChange", checkAuth);
@@ -51,23 +47,29 @@ const TopNavbar = () => {
     localStorage.removeItem("adminInfo");
     localStorage.removeItem("loginTime");
 
-    notifyAuthChange(); 
+    notifyAuthChange();
     setIsLoggedIn(false);
     navigate("/login");
   };
 
   return (
-    <nav className="navbar navbar-expand-lg navbar-dark bg-dark px-3">
-      <Link className="navbar-brand" to="/">MyApp</Link>
+    <nav className="navbar navbar-expand-lg navbar-dark bg-dark w-100 px-3">
+      <Link className="navbar-brand" to="/">
+        MyApp
+      </Link>
 
       <ul className="navbar-nav ms-auto align-items-center">
         <li className="nav-item">
-          <Link className="nav-link" to="/">Home</Link>
+          <Link className="nav-link" to="/">
+            Home
+          </Link>
         </li>
 
         {!isLoggedIn ? (
           <li className="nav-item">
-            <Link className="nav-link" to="/login">Login</Link>
+            <Link className="nav-link" to="/login">
+              Login
+            </Link>
           </li>
         ) : (
           <li className="nav-item">
@@ -85,4 +87,3 @@ const TopNavbar = () => {
 };
 
 export default TopNavbar;
-

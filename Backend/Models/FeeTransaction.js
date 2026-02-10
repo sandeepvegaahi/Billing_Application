@@ -1,5 +1,3 @@
-
-
 const mongoose = require("mongoose");
 
 const feeTransactionSchema = new mongoose.Schema(
@@ -8,12 +6,18 @@ const feeTransactionSchema = new mongoose.Schema(
     studentName: { type: String, required: true, trim: true },
     branch: { type: String, required: true, trim: true },
     year: { type: Number, required: true },
+    // academicYear: { type: String, required: true }, // ✅ NEW
+    // academicBatchId: {
+    //   type: mongoose.Schema.Types.ObjectId,
+    //   ref: "AcademicBatch",
+    //   required: true,
+    // },
     category: { type: String, required: true, trim: true },
     amountPaid: { type: Number, required: true },
     paymentMode: { type: String, default: "CASH" },
     customFeeName: { type: String, trim: true, default: null }, // ADDED
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 module.exports = mongoose.model("FeeTransaction", feeTransactionSchema);

@@ -2,10 +2,8 @@ const ExcelJS = require("exceljs");
 const fs = require("fs");
 const path = require("path");
 
-
 const templatesDir = path.join(__dirname, "templates");
 if (!fs.existsSync(templatesDir)) fs.mkdirSync(templatesDir);
-
 
 const studentColumns = [
   "htNumber",

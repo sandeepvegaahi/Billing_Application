@@ -25,6 +25,7 @@ const feePaymentSchema = new mongoose.Schema(
       type: String, // <--- change to String
       required: true,
     },
+    //academicBatch: { type: String, required: true },
 
     feeCategory: {
       type: String,
