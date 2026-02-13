@@ -25,7 +25,7 @@ exports.generateBatches = async (req, res) => {
       });
     }
 
-    // Upsert batches into DB (avoid duplicates)
+   
     for (const batch of batches) {
       await AcademicBatch.updateOne(
         { batchName: batch.batchName },
@@ -43,9 +43,7 @@ exports.generateBatches = async (req, res) => {
   }
 };
 
-/**
- * Fetch all batches
- */
+
 exports.getBatches = async (req, res) => {
   try {
     const batches = await AcademicBatch.find().sort({ startYear: 1 });

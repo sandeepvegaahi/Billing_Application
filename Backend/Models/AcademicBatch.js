@@ -17,7 +17,7 @@ const academicBatchSchema = new mongoose.Schema(
       required: true,
     },
     label: {
-      type: String, // "2016-2020"
+      type: String, 
       required: true,
     },
   },

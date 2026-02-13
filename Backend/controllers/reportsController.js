@@ -3,20 +3,20 @@ const Student = require("../Models/StudentBulk");
 const FeeStructure = require("../Models/FeeStructure");
 const mongoose = require("mongoose");
 
-// Financial Reports
+
 exports.getFinancialReport = async (req, res) => {
   try {
     const { type, branch, feeCategory, date, month, fromDate, toDate } = req.query;
 
     let match = {};
 
-    // Branch filter
+   
     if (branch && branch !== "ALL") match.branch = branch;
 
-    // Fee category filter
+    
     if (feeCategory) match.category = feeCategory;
 
-    // Date filter
+   
     if (type === "day" && date) {
       const start = new Date(date);
       const end = new Date(date);
@@ -53,12 +53,12 @@ exports.getFinancialReport = async (req, res) => {
   }
 };
 
-// Due Reports
+
 exports.getDueReport = async (req, res) => {
   try {
     const { type, branch, date, month, fromDate, toDate } = req.query;
 
-    // Fetch all students
+   
     let studentFilter = {};
     if (branch && branch !== "ALL") studentFilter.branch = branch;
 
@@ -71,7 +71,7 @@ exports.getDueReport = async (req, res) => {
       const currentYear = new Date().getFullYear() - new Date(s.admissionDate).getFullYear() + 1;
       const studentTransactions = transactions.filter((t) => t.htNumber === s.htNumber);
 
-      // Tuition & Bus fees
+   
       const tuitionPaid = studentTransactions
         .filter((t) => t.category === "TuitionFee")
         .reduce((a, t) => a + t.amountPaid, 0);
@@ -82,7 +82,6 @@ exports.getDueReport = async (req, res) => {
       const tuitionTotal = s.TutionFee || 0;
       const busTotal = s.busFee || 0;
 
-      // Other fees
       const otherFees = feeStructures
         .filter((f) => !["TuitionFee", "BusFee"].includes(f.category))
         .map((f) => {

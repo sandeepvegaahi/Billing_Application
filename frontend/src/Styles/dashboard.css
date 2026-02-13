@@ -1,8 +1,7 @@
-/* Styles/dashboard.css */
 
-/* Sidebar link default */
+
 .sidebar-link {
-  display: block; /* important so background covers full width */
+  display: block; 
   color: #333;
   padding: 10px 15px;
   margin-bottom: 5px;
@@ -11,24 +10,24 @@
   transition: all 0.2s;
 }
 
-/* Hover effect */
+
 .sidebar-link:hover {
   background-color: #e2e6ea;
   color: #000;
 }
 
-/* Active link (current page) */
+
 .active-link {
-  background-color: #0d6efd !important; /* Bootstrap primary color */
+  background-color: #0d6efd !important; 
   color: white !important;
   font-weight: bold;
 }
 
-/* Make sure focus or outline doesn't override the active color */
+
 .sidebar-link:focus,
 .sidebar-link:active {
   background-color: #0d6efd !important;
   color: white !important;
-  outline: none; /* remove the white arrow/focus outline */
-  box-shadow: none; /* remove any default bootstrap shadow */
+  outline: none; 
+  box-shadow: none; 
 }

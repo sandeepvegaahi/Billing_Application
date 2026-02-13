@@ -1,4 +1,4 @@
-// utils/academicYear.js
+
 const normalizeAcademicYear = (value) => {
   if (!value) return null;
 

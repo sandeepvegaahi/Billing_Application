@@ -1,12 +1,12 @@
 
+
 const XLSX = require("xlsx");
 const fs = require("fs");
 const Student = require("../Models/StudentBulk");
 const FeePayment = require("../Models/FeePayment");
-const FeeTransaction = require("../Models/FeeTransaction");
-const AcademicBatch = require("../Models/AcademicBatch"); // ✅ NEW
+const AcademicBatch = require("../Models/AcademicBatch");
 
-/* ---------- Helpers ---------- */
+
 const normalizeRow = (row) => {
   const normalized = {};
   Object.keys(row).forEach((key) => {
@@ -14,12 +14,6 @@ const normalizeRow = (row) => {
     normalized[cleanKey] = row[key];
   });
   return normalized;
-};
-
-const getYear = (date) => {
-  if (!date) return null;
-  const d = new Date(date);
-  return isNaN(d) ? null : d.getFullYear();
 };
 
 const extractNumber = (value) => {
@@ -34,7 +28,7 @@ const normalizeName = (name) =>
     .replace(/\s+/g, " ")
     .toLowerCase();
 
-/* ---------- Controller: Bulk Upload Fee Payments ---------- */
+
 exports.bulkUploadFeePayments = async (req, res) => {
   try {
     if (!req.file)
@@ -45,7 +39,6 @@ exports.bulkUploadFeePayments = async (req, res) => {
     if (!feeCategory)
       return res.status(400).json({ message: "Fee category required" });
 
-    // ✅ Academic Batch Validation (NEW)
     if (!academicBatchId) {
       return res.status(400).json({
         success: false,
@@ -54,7 +47,6 @@ exports.bulkUploadFeePayments = async (req, res) => {
     }
 
     const selectedBatch = await AcademicBatch.findById(academicBatchId).lean();
-
     if (!selectedBatch) {
       return res.status(400).json({
         success: false,
@@ -65,7 +57,7 @@ exports.bulkUploadFeePayments = async (req, res) => {
     const batchStartYear = selectedBatch.startYear;
     const batchEndYear = selectedBatch.endYear;
 
-    const selectedYear = Number(academicYear);
+    const selectedYear = Number(String(academicYear).split("-")[0]);
 
     if (
       !selectedYear ||
@@ -80,13 +72,13 @@ exports.bulkUploadFeePayments = async (req, res) => {
 
     const finalAcademicYear = `${selectedYear}-${selectedYear + 1}`;
 
-    // ⬇️ Your existing logic continues
     const workbook = XLSX.readFile(req.file.path);
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
     const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
 
     let updated = 0;
     let inserted = 0;
+    let failed = 0;
     const failedRows = [];
 
     const predefinedFees = [
@@ -121,17 +113,31 @@ exports.bulkUploadFeePayments = async (req, res) => {
         if (studentNameDB !== studentNameExcel)
           throw new Error("HT Number or Name mismatch");
 
-        // ✅ Use academic year from batch logic
-        const academicYear = finalAcademicYear;
+     
+        const studentBatchStart = new Date(student.admissionDate).getFullYear();
+        if (isNaN(studentBatchStart)) throw new Error("Invalid admission date");
 
-        // Predefined Fees
+        const studentBatchEnd = studentBatchStart + 4;
+
+        if (
+          studentBatchStart !== batchStartYear ||
+          studentBatchEnd !== batchEndYear
+        ) {
+          throw new Error(
+            `Wrong Academic Batch selected. Student belongs to batch ${studentBatchStart}-${studentBatchEnd}.`,
+          );
+        }
+       
+
+        const academicYearFinal = finalAcademicYear;
+
         if (["BusFee", "TuitionFee"].includes(feeCategory)) {
           const field = feeCategory === "BusFee" ? "busFee" : "TutionFee";
 
           await Student.updateOne({ htNumber }, { $set: { [field]: amount } });
 
           await FeePayment.updateOne(
-            { htNumber, feeCategory, academicYear },
+            { htNumber, feeCategory, academicYear: academicYearFinal },
             {
               $set: {
                 student: student._id,
@@ -141,17 +147,16 @@ exports.bulkUploadFeePayments = async (req, res) => {
                 paymentMode: "EXCEL",
               },
             },
-            { upsert: true }
+            { upsert: true },
           );
 
           updated++;
           continue;
         }
 
-        // Custom / Other Fees
         const exists = await FeePayment.findOne({
           htNumber,
-          academicYear,
+          academicYear: academicYearFinal,
           feeCategory: feeCategoryDB,
           customFeeName,
         });
@@ -165,17 +170,17 @@ exports.bulkUploadFeePayments = async (req, res) => {
           await FeePayment.updateOne(
             {
               htNumber,
-              academicYear,
+              academicYear: academicYearFinal,
               feeCategory: feeCategoryDB,
               customFeeName,
             },
-            { $set: { amount, paymentMode: "EXCEL" } }
+            { $set: { amount, paymentMode: "EXCEL" } },
           );
 
           if (fieldName)
             await Student.updateOne(
               { htNumber },
-              { $set: { [fieldName]: amount } }
+              { $set: { [fieldName]: amount } },
             );
 
           updated++;
@@ -186,7 +191,7 @@ exports.bulkUploadFeePayments = async (req, res) => {
           student: student._id,
           studentName: student.studentName,
           htNumber,
-          academicYear,
+          academicYear: academicYearFinal,
           feeCategory: feeCategoryDB,
           customFeeName,
           amount,
@@ -196,23 +201,28 @@ exports.bulkUploadFeePayments = async (req, res) => {
         if (fieldName)
           await Student.updateOne(
             { htNumber },
-            { $set: { [fieldName]: amount } }
+            { $set: { [fieldName]: amount } },
           );
 
         inserted++;
       } catch (err) {
+        failed++; 
         failedRows.push({ row: i + 2, error: err.message });
       }
     }
 
     fs.unlinkSync(req.file.path);
 
-    res.json({
+   
+    return res.status(200).json({
       success: true,
-      updated,
       inserted,
-      failed: failedRows.length,
+      failed,
       failedRows,
+      message:
+        failed > 0
+          ? "Some rows failed. Download error report."
+          : "Bulk upload completed successfully",
     });
   } catch (err) {
     console.error("BULK FEE UPLOAD ERROR:", err);

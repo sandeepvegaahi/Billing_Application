@@ -119,7 +119,7 @@ const FeeTransactionPage = () => {
     }
 
     try {
-      // Correct payload for CondonationFee and CUSTOM
+    
       const payload = {
         htNumber: student.htNumber,
         category: selectedFee.feeType === "CondonationFee" ? "CondonationFee" : selectedFee.category,
@@ -254,7 +254,7 @@ const FeeTransactionPage = () => {
               onClick={() =>
                 handleSelectFee({
                   ...f,
-                  category: f.feeType, // send feeType as category
+                  category: f.feeType, 
                 })
               }
             >

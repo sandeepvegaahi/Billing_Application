@@ -48,8 +48,8 @@ const feeColumns = [
   "htNumber",
   "studentName",
   "amount",
-  "paymentDate",
-  "academicYear",
+ // "paymentDate",
+ // "academicYear",
 ];
 
 feeCategories.forEach(async (category) => {

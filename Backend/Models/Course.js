@@ -6,12 +6,12 @@ const courseSchema = new mongoose.Schema(
     name: {
       type: String,
       required: true,
-      unique: true, // Engineering, Degree, MBA
+      unique: true, 
       trim: true,
     },
     durationYears: {
       type: Number,
-      required: true, // 3 or 4
+      required: true, 
       min: 1,
       max: 6,
     },

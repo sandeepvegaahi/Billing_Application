@@ -1,4 +1,4 @@
-/* Hero fade-in animation on page load */
+
 @keyframes fadeUp {
   0% {
     opacity: 0;
@@ -14,7 +14,6 @@
   animation: fadeUp 1s ease forwards;
 }
 
-/* Optional: stagger animation for multiple elements */
 .hero-animate:nth-child(1) {
   animation-delay: 0.2s;
 }

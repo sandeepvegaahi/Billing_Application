@@ -1,4 +1,4 @@
-// Controllers/courseController.js
+
 const Course = require("../Models/Course");
 const AcademicBatch = require("../Models/AcademicBatch");
 
@@ -13,13 +13,12 @@ exports.createCourseWithBatches = async (req, res) => {
       });
     }
 
-    // Create course
     const course = await Course.create({
       name: name.trim(),
       durationYears,
     });
 
-    // Generate batches
+   
     const currentYear = new Date().getFullYear();
     const batches = [];
 
@@ -48,7 +47,7 @@ exports.createCourseWithBatches = async (req, res) => {
     });
   }
 };
-// Controllers/courseController.js
+
 exports.getAcademicBatchesByCourse = async (req, res) => {
   try {
     const { courseId } = req.params;
@@ -65,7 +64,7 @@ exports.getAcademicBatchesByCourse = async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 };
-// GET all courses
+
 exports.getAllCourses = async (req, res) => {
   try {
     const courses = await Course.find().sort({ name: 1 });

@@ -7,7 +7,7 @@ const Home = () => {
 
   return (
     <div className="hero-section">
-      {/* Hero Section */}
+     
       <div
         className="d-flex align-items-center justify-content-center flex-column text-center text-white hero-content"
         style={{

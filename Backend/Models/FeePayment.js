@@ -22,7 +22,7 @@ const feePaymentSchema = new mongoose.Schema(
     },
 
     academicYear: {
-      type: String, // <--- change to String
+      type: String, 
       required: true,
     },
     //academicBatch: { type: String, required: true },

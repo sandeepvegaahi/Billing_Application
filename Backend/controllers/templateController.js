@@ -49,11 +49,11 @@ exports.downloadFeeTemplate = (req, res) => {
     {
       htNumber: "",
       studentName: "",
-      branch: "",
-      year: "",
-      category: category, 
-      amountPaid: "",
-      paymentMode: "",
+     // branch: "",
+     // year: "",
+     // category: category, 
+      amount: "",
+     // paymentMode: "",
     },
   ];
 

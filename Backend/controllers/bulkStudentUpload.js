@@ -40,7 +40,6 @@ const excelDateToJSDate = (value) => {
     return new Date(utcDays * 86400 * 1000);
   }
 
-  // force yyyy-mm-dd
   const parsed = new Date(String(value).trim());
   return isNaN(parsed) ? null : parsed;
 };
@@ -78,7 +77,7 @@ if (academicBatchId) {
   
   const rows = XLSX.utils.sheet_to_json(sheet, {
   defval: "",
-  raw: false,   // 👈 THIS IS CRITICAL
+  raw: false,   
 });
 
 
@@ -95,19 +94,19 @@ const admissionDateRaw = row.admissiondate;
 
 let admissionYear = null;
 
-// Case 1: Excel date number
+
 if (typeof admissionDateRaw === "number") {
   const date = excelDateToJSDate(admissionDateRaw);
   admissionYear = date?.getFullYear();
 }
 
-// Case 2: String like "2017" or "2017-06-01"
+
 else if (typeof admissionDateRaw === "string") {
   const yearMatch = admissionDateRaw.match(/\d{4}/);
   admissionYear = yearMatch ? Number(yearMatch[0]) : null;
 }
 
-// Case 3: JS Date
+
 else if (admissionDateRaw instanceof Date) {
   admissionYear = admissionDateRaw.getFullYear();
 }
@@ -179,7 +178,7 @@ if (batchStartYear && admissionYear) {
           dateOfBirth: excelDateToJSDate(row.dateofbirth),
           busFee,
           TutionFee,
-         // admissionFee: extractNumber(row.admissionfee),
+      
         };
 
         await Student.create(studentData);

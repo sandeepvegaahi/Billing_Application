@@ -47,7 +47,7 @@ const StudentCountCard = () => {
   useEffect(() => {
     fetchBranchCounts();
 
-    // Listen to dashboard/student updates
+    
     const handleUpdate = () => fetchBranchCounts();
     window.addEventListener("studentsUpdated", handleUpdate);
 
@@ -72,7 +72,7 @@ const StudentCountCard = () => {
     );
   }
 
-  // Card colors
+
   const cardColors = {
     TOTAL: "bg-primary text-white",
     CSE: "bg-success text-white",
@@ -83,7 +83,7 @@ const StudentCountCard = () => {
 
   return (
     <Row className="mb-4 g-3">
-      {/* TOTAL STUDENTS */}
+   
       <Col md={3}>
         <Card
           className={`p-3 shadow-sm rounded-4 text-center ${cardColors.TOTAL}`}
@@ -93,7 +93,7 @@ const StudentCountCard = () => {
         </Card>
       </Col>
 
-      {/* Branch-wise cards */}
+     
       {branchCounts.map((b) => (
         <Col md={3} key={b.branch}>
           <Card

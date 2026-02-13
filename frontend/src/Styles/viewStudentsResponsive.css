@@ -8,7 +8,7 @@
 }
 
 .table-scroll-container table {
-  min-width: 1600px; /* increase if more columns */
+  min-width: 1600px; 
 }
 
 table {

@@ -6,7 +6,7 @@ const {
   getBatches,
 } = require("../controllers/academicBatchController");
 
-router.post("/generate", adminProtect, generateBatches); // Admin inputs starting year
-router.get("/", adminProtect, getBatches); // Fetch all batches
+router.post("/generate", adminProtect, generateBatches); 
+router.get("/", adminProtect, getBatches); 
 
 module.exports = router;
